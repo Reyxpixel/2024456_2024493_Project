@@ -36,11 +36,26 @@ public class LoginScreen extends JFrame {
                 User user = AuthService.login(u, p);
 
                 if (user != null) {
-                    JOptionPane.showMessageDialog(null, "Welcome " + user.getRole() + " " + user.getUsername());
+                    openDashboard(user);
+                    dispose(); // close login window
                 } else {
                     JOptionPane.showMessageDialog(null, "Invalid credentials!");
                 }
             }
         });
+    }
+
+    private void openDashboard(User user) {
+        String role = user.getRole().toLowerCase();
+
+        if (role.equals("student")) {
+            new StudentDashboard(user.getUsername()).setVisible(true);
+        } else if (role.equals("instructor")) {
+            new InstructorDashboard(user.getUsername()).setVisible(true);
+        } else if (role.equals("admin")) {
+            new AdminDashboard(user.getUsername()).setVisible(true);
+        } else {
+            JOptionPane.showMessageDialog(null, "Unknown role: " + role);
+        }
     }
 }
