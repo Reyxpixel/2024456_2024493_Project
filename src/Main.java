@@ -6,9 +6,10 @@ public class Main {
     public static void main(String[] args) {
         AuthDB.init();
 
-        AuthService.register("alice", "password123", "student");
-        AuthService.register("bob", "teachpass", "instructor");
-        AuthService.register("charlie", "adminpass", "admin");
+        AuthService.register("stu1", "stupass", "student");
+        AuthService.register("stu2", "stupass", "student");
+        AuthService.register("inst1", "instpass", "instructor");
+        AuthService.register("admin1", "adminpass", "admin");
 
         new LoginScreen().setVisible(true);
     }
