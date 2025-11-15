@@ -12,5 +12,6 @@ public class Main {
         AuthService.register("admin1", "adminpass", "admin");
 
         new LoginScreen().setVisible(true);
+        //samplecomment
     }
 }
