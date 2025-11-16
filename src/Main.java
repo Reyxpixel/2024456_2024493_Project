@@ -1,4 +1,5 @@
 import db.AuthDB;
+import db.erpDB;
 import service.AuthService;
 import ui.LoginScreen;
 
@@ -11,7 +12,8 @@ public class Main {
         AuthService.register("inst1", "instpass", "instructor");
         AuthService.register("admin1", "adminpass", "admin");
 
+        new erpDB(); // creates ERP DB tables
         new LoginScreen().setVisible(true);
-        //samplecomment
+
     }
 }
