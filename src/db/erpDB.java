@@ -12,19 +12,19 @@ public class erpDB {
 
     public erpDB() {
         String students = """
-        CREATE TABLE IF NOT EXISTS students (
-            student_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        CREATE TABLE IF NOT EXISTS Student (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
             name TEXT NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            program TEXT
+            major TEXT
         );
     """;
 
         String instructors = """
-        CREATE TABLE IF NOT EXISTS instructors (
-            instructor_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        CREATE TABLE IF NOT EXISTS Instructor (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
             name TEXT NOT NULL,
-            email TEXT UNIQUE NOT NULL,
             department TEXT
         );
     """;
@@ -90,7 +90,7 @@ public class erpDB {
             e.printStackTrace();
         }
     }
-    private Connection connect() {
+    private static Connection connect() {
         Connection conn = null;
 
         try {
@@ -609,5 +609,18 @@ public class erpDB {
         }
         return list;
     }
+    public static ResultSet getStudentByEmail(String email) throws Exception {
+        Connection conn = connect();
+        Statement stmt = conn.createStatement();
+        String sql = "SELECT * FROM students WHERE email='" + email + "'";
+        return stmt.executeQuery(sql);
+    }
+    public static ResultSet getInstructorByEmail(String email) throws Exception {
+        Connection conn = connect();
+        Statement stmt = conn.createStatement();
+        String sql = "SELECT * FROM instructors WHERE email='" + email + "'";
+        return stmt.executeQuery(sql);
+    }
+
 
 }

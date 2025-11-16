@@ -636,11 +636,11 @@ public class LoginScreen extends JFrame {
         String role = user.getRole().toLowerCase();
 
         if (role.equals("student")) {
-            new StudentDashboard(user.getUsername()).setVisible(true);
+            new StudentDashboard(user).setVisible(true);
         } else if (role.equals("instructor")) {
-            new InstructorDashboard(user.getUsername()).setVisible(true);
+            new InstructorDashboard(user).setVisible(true);
         } else if (role.equals("admin")) {
-            new AdminDashboard(user.getUsername()).setVisible(true);
+            new AdminDashboard(user).setVisible(true);
         } else {
             JOptionPane.showMessageDialog(null, "Unknown role: " + role);
         }

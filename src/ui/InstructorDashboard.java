@@ -1,14 +1,20 @@
 package ui;
 
+import model.User;
+
 import javax.swing.*;
 
 public class InstructorDashboard extends JFrame {
-    public InstructorDashboard(String username) {
-        setTitle("Instructor Dashboard - " + username);
+    private final User User;
+    private String instructorName;
+
+    public InstructorDashboard(User user) {
+        this.User = user;
+        setTitle("Instructor Dashboard - " + user.getUsername());
         setSize(400, 200);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
-        JLabel label = new JLabel("Welcome Instructor " + username);
+        JLabel label = new JLabel("Welcome Instructor " + user.getUsername());
         add(label);
     }
 }

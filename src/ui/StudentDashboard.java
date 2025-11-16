@@ -1,14 +1,19 @@
 package ui;
 
+import model.User;
+
 import javax.swing.*;
 import java.awt.*;
 
 public class StudentDashboard extends JFrame {
 
+    private final User User;
     private String studentName;
 
-    public StudentDashboard(String studentName) {
-        this.studentName = studentName;
+    public StudentDashboard(User user) {
+        this.User = user;
+        setTitle("Student Dashboard - " + user.getUsername());
+        this.studentName = user.getUsername();
         setTitle("Student Dashboard - " + studentName);
         setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

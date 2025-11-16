@@ -1,15 +1,20 @@
 package ui;
 
+import model.User;
+
 import javax.swing.*;
 
 public class AdminDashboard extends JFrame {
-    public AdminDashboard(String username) {
+    private final User User;
+    private String studentName;
 
-        setTitle("Admin Dashboard - " + username);
+    public AdminDashboard(User user) {
+        this.User = user;
+        setTitle("Admin Dashboard - " + user.getUsername());
         setSize(400, 200);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
-        JLabel label = new JLabel("Welcome Admin " + username);
+        JLabel label = new JLabel("Welcome Admin " + user.getUsername());
         add(label);
     }
 }
