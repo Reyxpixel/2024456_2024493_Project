@@ -11,7 +11,11 @@ import service.AuthService;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.plaf.basic.BasicTabbedPaneUI;
 import java.awt.*;
+import java.io.File;
+import java.io.IOException;
+import javax.imageio.ImageIO;
 import java.util.List;
 
 public class AdminDashboard extends JFrame {
@@ -26,14 +30,30 @@ public class AdminDashboard extends JFrame {
     private JLabel instructorCountLabel;
     private JLabel courseCountLabel;
     private JLabel maintenanceStatusLabel;
-    private JToggleButton maintenanceToggle;
+    private RoundedToggleButton maintenanceToggle;
     private boolean updatingMaintenanceToggle = false;
+    private Image headerBackgroundImage;
 
     public AdminDashboard(User user) {
         this.user = user;
         this.erpDb = new erpDB();
+        loadHeaderBackground();
         initUI();
         refreshAllData();
+    }
+
+    private void loadHeaderBackground() {
+        try {
+            File imgFile = new File("src/ui/iiitdbackground.png");
+            if (!imgFile.exists()) {
+                imgFile = new File("ui/iiitdbackground.png");
+            }
+            if (imgFile.exists()) {
+                headerBackgroundImage = ImageIO.read(imgFile);
+            }
+        } catch (IOException e) {
+            headerBackgroundImage = null;
+        }
     }
 
     private void initUI() {
@@ -48,9 +68,22 @@ public class AdminDashboard extends JFrame {
     }
 
     private JPanel createHeader() {
-        JPanel header = new JPanel(new BorderLayout());
-        header.setBorder(new EmptyBorder(15, 20, 15, 20));
-        header.setBackground(new Color(33, 37, 41));
+        JPanel header = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                if (headerBackgroundImage != null) {
+                    g2.drawImage(headerBackgroundImage, 0, 0, getWidth(), getHeight(), null);
+                }
+                g2.setColor(new Color(25, 25, 25, 200));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
+                g2.dispose();
+            }
+        };
+        header.setOpaque(false);
+        header.setBorder(new EmptyBorder(20, 25, 20, 25));
 
         JLabel title = new JLabel("IIITD ERP • Admin");
         title.setFont(new Font("Segoe UI", Font.BOLD, 20));
@@ -67,12 +100,10 @@ public class AdminDashboard extends JFrame {
         titlePanel.add(Box.createVerticalStrut(4));
         titlePanel.add(subtitle);
 
-        JButton changePasswordBtn = new JButton("Change Password");
+        JButton changePasswordBtn = createButton("Change Password", new Color(52, 152, 219));
         changePasswordBtn.addActionListener(e -> openChangePasswordDialog());
 
-        JButton logoutBtn = new JButton("Logout");
-        logoutBtn.setBackground(new Color(220, 53, 69));
-        logoutBtn.setForeground(Color.WHITE);
+        JButton logoutBtn = createButton("Logout", new Color(220, 53, 69));
         logoutBtn.addActionListener(e -> {
             dispose();
             new LoginScreen().setVisible(true);
@@ -90,6 +121,9 @@ public class AdminDashboard extends JFrame {
 
     private JTabbedPane createTabs() {
         JTabbedPane tabs = new JTabbedPane();
+        tabs.setUI(new RoundedTabbedPaneUI());
+        tabs.setOpaque(false);
+        tabs.setBorder(new EmptyBorder(10, 20, 0, 20));
         tabs.addTab("Home", createHomePanel());
         tabs.addTab("Courses", createCoursesPanel());
         tabs.addTab("Students", createStudentsPanel());
@@ -110,17 +144,11 @@ public class AdminDashboard extends JFrame {
         stats.add(createStatCard("Registered Instructors", instructorCountLabel));
         stats.add(createStatCard("Active Courses", courseCountLabel));
 
-        JPanel maintenancePanel = new JPanel();
-        maintenancePanel.setLayout(new BoxLayout(maintenancePanel, BoxLayout.Y_AXIS));
-        maintenancePanel.setBorder(new EmptyBorder(30, 0, 0, 0));
-
         maintenanceStatusLabel = new JLabel("Maintenance mode status unknown");
         maintenanceStatusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        maintenanceStatusLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        maintenanceStatusLabel.setForeground(new Color(60, 60, 60));
 
-        maintenanceToggle = new JToggleButton("Maintenance Off");
-        maintenanceToggle.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        maintenanceToggle.setAlignmentX(Component.CENTER_ALIGNMENT);
+        maintenanceToggle = new RoundedToggleButton();
         maintenanceToggle.addActionListener(e -> {
             if (updatingMaintenanceToggle) {
                 return;
@@ -128,12 +156,13 @@ public class AdminDashboard extends JFrame {
             setMaintenanceMode(maintenanceToggle.isSelected());
         });
 
-        maintenancePanel.add(maintenanceStatusLabel);
-        maintenancePanel.add(Box.createVerticalStrut(10));
-        maintenancePanel.add(maintenanceToggle);
+        JPanel maintenancePanel = new JPanel(new BorderLayout(10, 0));
+        maintenancePanel.setOpaque(false);
+        maintenancePanel.add(maintenanceStatusLabel, BorderLayout.WEST);
+        maintenancePanel.add(maintenanceToggle, BorderLayout.EAST);
 
-        panel.add(stats, BorderLayout.NORTH);
-        panel.add(maintenancePanel, BorderLayout.CENTER);
+        panel.add(maintenancePanel, BorderLayout.NORTH);
+        panel.add(stats, BorderLayout.CENTER);
         return panel;
     }
 
@@ -155,10 +184,10 @@ public class AdminDashboard extends JFrame {
     private JPanel createCoursesPanel() {
         courseTable = buildTable(new String[]{"ID", "Code", "Title", "Credits"});
 
-        JButton addBtn = new JButton("Add Course");
+        JButton addBtn = createButton("Add Course", new Color(52, 152, 219));
         addBtn.addActionListener(e -> openCourseDialog(null));
 
-        JButton editBtn = new JButton("Edit Selected");
+        JButton editBtn = createButton("Edit Selected", new Color(108, 117, 125));
         editBtn.addActionListener(e -> {
             Course selected = getSelectedCourse();
             if (selected != null) {
@@ -166,10 +195,10 @@ public class AdminDashboard extends JFrame {
             }
         });
 
-        JButton deleteBtn = new JButton("Delete Selected");
+        JButton deleteBtn = createButton("Delete Selected", new Color(231, 76, 60));
         deleteBtn.addActionListener(e -> deleteCourse());
 
-        JButton refreshBtn = new JButton("Refresh");
+        JButton refreshBtn = createButton("Refresh", new Color(40, 167, 69));
         refreshBtn.addActionListener(e -> loadCourses());
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
@@ -188,13 +217,13 @@ public class AdminDashboard extends JFrame {
     private JPanel createStudentsPanel() {
         studentTable = buildTable(new String[]{"ID", "Name", "Email", "Program"});
 
-        JButton registerBtn = new JButton("Register Student");
+        JButton registerBtn = createButton("Register Student", new Color(52, 152, 219));
         registerBtn.addActionListener(e -> openStudentRegistrationDialog());
 
-        JButton deleteBtn = new JButton("Delete Selected");
+        JButton deleteBtn = createButton("Delete Selected", new Color(231, 76, 60));
         deleteBtn.addActionListener(e -> deleteStudent());
 
-        JButton refreshBtn = new JButton("Refresh");
+        JButton refreshBtn = createButton("Refresh", new Color(40, 167, 69));
         refreshBtn.addActionListener(e -> loadStudents());
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
@@ -212,13 +241,13 @@ public class AdminDashboard extends JFrame {
     private JPanel createInstructorsPanel() {
         instructorTable = buildTable(new String[]{"ID", "Name", "Email", "Department"});
 
-        JButton registerBtn = new JButton("Register Instructor");
+        JButton registerBtn = createButton("Register Instructor", new Color(52, 152, 219));
         registerBtn.addActionListener(e -> openInstructorRegistrationDialog());
 
-        JButton deleteBtn = new JButton("Delete Selected");
+        JButton deleteBtn = createButton("Delete Selected", new Color(231, 76, 60));
         deleteBtn.addActionListener(e -> deleteInstructor());
 
-        JButton refreshBtn = new JButton("Refresh");
+        JButton refreshBtn = createButton("Refresh", new Color(40, 167, 69));
         refreshBtn.addActionListener(e -> loadInstructors());
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
@@ -231,6 +260,13 @@ public class AdminDashboard extends JFrame {
         wrapper.add(actions, BorderLayout.NORTH);
         wrapper.add(new JScrollPane(instructorTable), BorderLayout.CENTER);
         return wrapper;
+    }
+
+    private JButton createButton(String text, Color color) {
+        RoundedButton button = new RoundedButton(text, color);
+        button.setForeground(Color.WHITE);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        return button;
     }
 
     private JTable buildTable(String[] headers) {
@@ -593,5 +629,129 @@ public class AdminDashboard extends JFrame {
         }
 
         JOptionPane.showMessageDialog(this, "Password updated successfully.");
+    }
+
+    private static class RoundedButton extends JButton {
+        private final int cornerRadius = 22;
+        private final Color baseColor;
+
+        RoundedButton(String text, Color baseColor) {
+            super(text);
+            this.baseColor = baseColor;
+            setFocusPainted(false);
+            setBorderPainted(false);
+            setContentAreaFilled(false);
+            setOpaque(false);
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            setMargin(new Insets(10, 22, 10, 22));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            Color paintColor = baseColor;
+            if (!isEnabled()) {
+                paintColor = baseColor.darker();
+            } else if (getModel().isPressed()) {
+                paintColor = baseColor.darker();
+            } else if (getModel().isRollover()) {
+                paintColor = baseColor.brighter();
+            }
+            g2.setColor(paintColor);
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), cornerRadius, cornerRadius);
+            g2.dispose();
+            super.paintComponent(g);
+        }
+    }
+
+    private static class RoundedToggleButton extends JToggleButton {
+        private final int radius = 28;
+
+        RoundedToggleButton() {
+            super("Maintenance Off");
+            setFocusPainted(false);
+            setBorderPainted(false);
+            setContentAreaFilled(false);
+            setOpaque(false);
+            setFont(new Font("Segoe UI", Font.BOLD, 14));
+            setForeground(Color.WHITE);
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            setMargin(new Insets(12, 26, 12, 26));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            Color base = isSelected() ? new Color(231, 76, 60) : new Color(40, 167, 69);
+            if (getModel().isRollover()) {
+                base = base.brighter();
+            }
+            g2.setColor(base);
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), radius, radius);
+            g2.dispose();
+            super.paintComponent(g);
+        }
+    }
+
+    private static class RoundedTabbedPaneUI extends BasicTabbedPaneUI {
+        private final Color selectedColor = Color.WHITE;
+        private final Color unselectedColor = new Color(232, 235, 239);
+        private final Color textColor = new Color(80, 80, 80);
+
+        @Override
+        protected void installDefaults() {
+            super.installDefaults();
+            tabAreaInsets.right = 20;
+            tabInsets = new Insets(14, 28, 14, 28);
+        }
+
+        @Override
+        protected void paintTabBackground(Graphics g, int tabPlacement, int tabIndex,
+                                          int x, int y, int w, int h, boolean isSelected) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(isSelected ? selectedColor : unselectedColor);
+            g2.fillRoundRect(x + 4, y + 4, w - 8, h - 8, 24, 24);
+            g2.dispose();
+        }
+
+        @Override
+        protected void paintTabBorder(Graphics g, int tabPlacement, int tabIndex,
+                                      int x, int y, int w, int h, boolean isSelected) {
+            // no border
+        }
+
+        @Override
+        protected void paintContentBorder(Graphics g, int tabPlacement, int selectedIndex) {
+            // skip default border to keep clean look
+        }
+
+        @Override
+        protected void paintText(Graphics g, int tabPlacement, Font font, FontMetrics metrics,
+                                 int tabIndex, String title, Rectangle textRect, boolean isSelected) {
+            Font oldFont = g.getFont();
+            Font useFont = font.deriveFont(Font.BOLD, 14f);
+            g.setFont(useFont);
+            FontMetrics fm = g.getFontMetrics(useFont);
+            int textWidth = fm.stringWidth(title);
+            int textHeight = fm.getAscent();
+            int x = textRect.x + (textRect.width - textWidth) / 2;
+            int y = textRect.y + ((textRect.height - fm.getHeight()) / 2) + textHeight;
+            g.setColor(isSelected ? new Color(26, 115, 232) : textColor);
+            g.drawString(title, x, y);
+            g.setFont(oldFont);
+        }
+
+        @Override
+        protected int calculateTabHeight(int tabPlacement, int tabIndex, int fontHeight) {
+            return 48;
+        }
+
+        @Override
+        protected int calculateTabWidth(int tabPlacement, int tabIndex, FontMetrics metrics) {
+            return Math.max(140, super.calculateTabWidth(tabPlacement, tabIndex, metrics));
+        }
     }
 }
