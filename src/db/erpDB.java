@@ -617,6 +617,28 @@ public class erpDB {
         }
         return list;
     }
+    public List<Enrollment> getAllEnrollments() {
+        List<Enrollment> list = new ArrayList<>();
+        String sql = "SELECT id, student_id, section_id, grade_id FROM enrollments";
+
+        try (Connection conn = connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                list.add(new Enrollment(
+                        rs.getInt("id"),
+                        rs.getInt("student_id"),
+                        rs.getInt("section_id"),
+                        (Integer) rs.getObject("grade_id")
+                ));
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
     public boolean updateEnrollmentGrade(int enrollmentId, int gradeId) {
         String sql = "UPDATE enrollments SET grade_id = ? WHERE id = ?";
         try (Connection conn = connect();

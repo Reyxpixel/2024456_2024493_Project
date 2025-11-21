@@ -14,6 +14,8 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.ComboBoxModel;
 import javax.swing.border.EmptyBorder;
+import javax.swing.plaf.basic.BasicSpinnerUI;
+import javax.swing.plaf.basic.BasicComboBoxUI;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
@@ -33,7 +35,7 @@ import java.util.Map;
 import java.util.function.IntConsumer;
 
 public class AdminDashboard extends JFrame {
-    private static final Color BG_LIGHT = new Color(246, 248, 250);
+    private static final Color BG_LIGHT = new Color(240, 242, 245);
     private static final Color PANEL_ACCENT = new Color(0x42, 0xB0, 0xAC);
     private static final Color BUTTON_DEFAULT = new Color(235, 238, 243);
     private static final Color BUTTON_TEXT = new Color(60, 60, 60);
@@ -130,7 +132,7 @@ public class AdminDashboard extends JFrame {
                         g2.drawImage(headerBackgroundImage, x, y, drawW, drawH, null);
                     }
                 }
-                g2.setColor(new Color(25, 25, 25, 210));
+                g2.setColor(new Color(25, 25, 25, 160));
                 g2.fillRect(0, 0, getWidth(), getHeight());
                 g2.setColor(PANEL_ACCENT);
                 g2.fillRect(0, getHeight() - 4, getWidth(), 4);
@@ -138,26 +140,32 @@ public class AdminDashboard extends JFrame {
             }
         };
         header.setOpaque(false);
-        header.setBorder(new EmptyBorder(20, 25, 12, 25));
+        header.setPreferredSize(new Dimension(0, 80));
+        header.setBorder(new EmptyBorder(0, 25, 0, 25));
 
         JLabel title = new JLabel("IIITD ERP • Admin");
         title.setFont(new Font("Segoe UI", Font.BOLD, 20));
         title.setForeground(Color.WHITE);
+        title.setVerticalAlignment(SwingConstants.CENTER);
 
         JLabel subtitle = new JLabel("Welcome, " + user.getUsername());
         subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         subtitle.setForeground(new Color(220, 220, 220));
+        subtitle.setVerticalAlignment(SwingConstants.CENTER);
 
         JPanel titlePanel = new JPanel();
         titlePanel.setOpaque(false);
         titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
+        titlePanel.add(Box.createVerticalGlue());
         titlePanel.add(title);
         titlePanel.add(Box.createVerticalStrut(4));
         titlePanel.add(subtitle);
+        titlePanel.add(Box.createVerticalGlue());
 
         maintenanceStatusLabel = new JLabel("Portal status unknown");
         maintenanceStatusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         maintenanceStatusLabel.setForeground(Color.WHITE);
+        maintenanceStatusLabel.setVerticalAlignment(SwingConstants.CENTER);
 
         maintenanceToggle = new RoundedToggleButton();
         maintenanceToggle.addActionListener(e -> {
@@ -166,10 +174,14 @@ public class AdminDashboard extends JFrame {
             }
         });
 
-        JPanel maintenancePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
+        JPanel maintenancePanel = new JPanel();
         maintenancePanel.setOpaque(false);
+        maintenancePanel.setLayout(new BoxLayout(maintenancePanel, BoxLayout.X_AXIS));
+        maintenancePanel.add(Box.createHorizontalGlue());
         maintenancePanel.add(maintenanceStatusLabel);
+        maintenancePanel.add(Box.createHorizontalStrut(12));
         maintenancePanel.add(maintenanceToggle);
+        maintenancePanel.add(Box.createHorizontalGlue());
 
         JButton changePasswordBtn = createButton("Change Password");
         changePasswordBtn.addActionListener(e -> openChangePasswordDialog());
@@ -180,14 +192,19 @@ public class AdminDashboard extends JFrame {
             new LoginScreen().setVisible(true);
         });
 
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        JPanel actions = new JPanel();
         actions.setOpaque(false);
+        actions.setLayout(new BoxLayout(actions, BoxLayout.X_AXIS));
+        actions.add(Box.createHorizontalGlue());
         actions.add(changePasswordBtn);
+        actions.add(Box.createHorizontalStrut(10));
         actions.add(logoutBtn);
 
+        header.setLayout(new BorderLayout());
         header.add(titlePanel, BorderLayout.WEST);
         header.add(maintenancePanel, BorderLayout.CENTER);
         header.add(actions, BorderLayout.EAST);
+        
         return header;
     }
 
@@ -362,31 +379,170 @@ public class AdminDashboard extends JFrame {
     private JPanel createStatisticsPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(BG_LIGHT);
-        panel.setBorder(new EmptyBorder(40, 30, 40, 30));
+        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        RoundedPanel card = new RoundedPanel(32, Color.WHITE);
+        JPanel content = new JPanel(new GridLayout(2, 2, 20, 20));
+        content.setOpaque(false);
+
+        content.add(createCourseEnrollmentStats());
+        content.add(createInstructorLoadStats());
+        content.add(createSectionCapacityStats());
+        content.add(createOverallStats());
+
+        panel.add(content, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private JPanel createCourseEnrollmentStats() {
+        RoundedPanel card = new RoundedPanel(28, Color.WHITE);
         card.setLayout(new BorderLayout());
-        card.setBorder(new EmptyBorder(30, 30, 30, 30));
+        card.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        JLabel title = new JLabel("Analytics & Trends");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        title.setForeground(new Color(55, 61, 73));
+        JLabel title = new JLabel("Course Enrollments");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        title.setForeground(new Color(50, 50, 50));
+        title.setBorder(new EmptyBorder(0, 0, 15, 0));
 
-        JLabel subtitle = new JLabel("Graphs for enrollments, loads, and performance will appear here.");
-        subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 15));
-        subtitle.setForeground(new Color(120, 126, 140));
-
-        JPanel placeholder = new JPanel();
-        placeholder.setOpaque(false);
-        placeholder.setBorder(BorderFactory.createDashedBorder(new Color(210, 214, 223), 8, 8));
-        placeholder.add(new JLabel("Charts coming soon"));
+        JTable table = buildTable(new String[]{"Course", "Sections", "Enrolled"});
+        loadCourseEnrollmentStats(table);
 
         card.add(title, BorderLayout.NORTH);
-        card.add(subtitle, BorderLayout.CENTER);
-        card.add(placeholder, BorderLayout.SOUTH);
+        card.add(new JScrollPane(table), BorderLayout.CENTER);
+        return card;
+    }
 
-        panel.add(card, BorderLayout.CENTER);
-        return panel;
+    private JPanel createInstructorLoadStats() {
+        RoundedPanel card = new RoundedPanel(28, Color.WHITE);
+        card.setLayout(new BorderLayout());
+        card.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        JLabel title = new JLabel("Instructor Loads");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        title.setForeground(new Color(50, 50, 50));
+        title.setBorder(new EmptyBorder(0, 0, 15, 0));
+
+        JTable table = buildTable(new String[]{"Instructor", "Sections", "Students"});
+        loadInstructorLoadStats(table);
+
+        card.add(title, BorderLayout.NORTH);
+        card.add(new JScrollPane(table), BorderLayout.CENTER);
+        return card;
+    }
+
+    private JPanel createSectionCapacityStats() {
+        RoundedPanel card = new RoundedPanel(28, Color.WHITE);
+        card.setLayout(new BorderLayout());
+        card.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        JLabel title = new JLabel("Section Capacity");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        title.setForeground(new Color(50, 50, 50));
+        title.setBorder(new EmptyBorder(0, 0, 15, 0));
+
+        JTable table = buildTable(new String[]{"Section", "Capacity", "Enrolled", "Available"});
+        loadSectionCapacityStats(table);
+
+        card.add(title, BorderLayout.NORTH);
+        card.add(new JScrollPane(table), BorderLayout.CENTER);
+        return card;
+    }
+
+    private JPanel createOverallStats() {
+        RoundedPanel card = new RoundedPanel(28, Color.WHITE);
+        card.setLayout(new BorderLayout());
+        card.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        JLabel title = new JLabel("Overall Statistics");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        title.setForeground(new Color(50, 50, 50));
+        title.setBorder(new EmptyBorder(0, 0, 15, 0));
+
+        int totalStudents = erpDb.getStudentCount();
+        int totalInstructors = erpDb.getInstructorCount();
+        int totalCourses = erpDb.getCourseCount();
+        int totalSections = erpDb.getAllSections().size();
+        int totalEnrollments = erpDb.getAllEnrollments().size();
+
+        JPanel stats = new JPanel(new GridLayout(5, 1, 0, 10));
+        stats.setOpaque(false);
+        stats.add(createStatRow("Total Students", String.valueOf(totalStudents)));
+        stats.add(createStatRow("Total Instructors", String.valueOf(totalInstructors)));
+        stats.add(createStatRow("Total Courses", String.valueOf(totalCourses)));
+        stats.add(createStatRow("Total Sections", String.valueOf(totalSections)));
+        stats.add(createStatRow("Total Enrollments", String.valueOf(totalEnrollments)));
+
+        card.add(title, BorderLayout.NORTH);
+        card.add(stats, BorderLayout.CENTER);
+        return card;
+    }
+
+    private JPanel createStatRow(String label, String value) {
+        JPanel row = new JPanel(new BorderLayout());
+        row.setOpaque(false);
+        JLabel labelComp = new JLabel(label);
+        labelComp.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        labelComp.setForeground(new Color(100, 100, 100));
+        JLabel valueComp = new JLabel(value);
+        valueComp.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        valueComp.setForeground(new Color(50, 50, 50));
+        row.add(labelComp, BorderLayout.WEST);
+        row.add(valueComp, BorderLayout.EAST);
+        return row;
+    }
+
+    private void loadCourseEnrollmentStats(JTable table) {
+        DefaultTableModel model = (DefaultTableModel) table.getModel();
+        model.setRowCount(0);
+        List<Course> courses = erpDb.getAllCourses();
+        for (Course course : courses) {
+            List<Section> sections = erpDb.getSectionsByCourse(course.getId());
+            int totalEnrolled = 0;
+            for (Section section : sections) {
+                totalEnrolled += erpDb.getEnrollmentCountForSection(section.getId());
+            }
+            model.addRow(new Object[]{
+                course.getCode() + " • " + course.getTitle(),
+                sections.size(),
+                totalEnrolled
+            });
+        }
+    }
+
+    private void loadInstructorLoadStats(JTable table) {
+        DefaultTableModel model = (DefaultTableModel) table.getModel();
+        model.setRowCount(0);
+        List<Instructor> instructors = erpDb.getAllInstructors();
+        for (Instructor instructor : instructors) {
+            List<Section> sections = erpDb.getAllSections().stream()
+                .filter(s -> s.getInstructorId() != null && s.getInstructorId().equals(instructor.getId()))
+                .toList();
+            int totalStudents = 0;
+            for (Section section : sections) {
+                totalStudents += erpDb.getEnrollmentCountForSection(section.getId());
+            }
+            model.addRow(new Object[]{
+                instructor.getName(),
+                sections.size(),
+                totalStudents
+            });
+        }
+    }
+
+    private void loadSectionCapacityStats(JTable table) {
+        DefaultTableModel model = (DefaultTableModel) table.getModel();
+        model.setRowCount(0);
+        List<Section> sections = erpDb.getAllSections();
+        for (Section section : sections) {
+            Course course = erpDb.getCourseById(section.getCourseId());
+            int enrolled = erpDb.getEnrollmentCountForSection(section.getId());
+            int available = section.getCapacity() - enrolled;
+            model.addRow(new Object[]{
+                (course != null ? course.getCode() : "?") + " • " + section.getName(),
+                section.getCapacity(),
+                enrolled,
+                available
+            });
+        }
     }
 
     private JPanel buildModulePanel(JPanel actions, JTable table) {
@@ -464,27 +620,33 @@ public class AdminDashboard extends JFrame {
     }
 
     private void styleTable(JTable table) {
-        table.setRowHeight(32);
+        table.setRowHeight(45);
         table.setFillsViewportHeight(true);
-        table.setShowHorizontalLines(false);
-        table.setShowVerticalLines(false);
-        table.setIntercellSpacing(new Dimension(0, 0));
+        table.setShowHorizontalLines(true);
+        table.setShowVerticalLines(true);
+        table.setGridColor(new Color(230, 230, 230));
+        table.setIntercellSpacing(new Dimension(1, 1));
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        table.setDefaultRenderer(Object.class, new ZebraTableCellRenderer());
+        table.setDefaultRenderer(Object.class, new SimpleTableCellRenderer());
+        table.setBackground(new Color(250, 250, 250));
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        table.setSelectionBackground(new Color(66, 176, 172));
+        table.setSelectionForeground(Color.WHITE);
         JTableHeader header = table.getTableHeader();
-        header.setPreferredSize(new Dimension(header.getPreferredSize().width, 42));
-        header.setBackground(new Color(238, 240, 245));
-        header.setForeground(new Color(76, 81, 97));
+        header.setPreferredSize(new Dimension(header.getPreferredSize().width, 45));
+        header.setBackground(new Color(240, 240, 240));
+        header.setForeground(new Color(50, 50, 50));
         header.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        header.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, new Color(230, 230, 230)));
     }
 
     private void attachButtonColumn(JTable table, int columnIndex, String label, IntConsumer handler) {
         TableColumn column = table.getColumnModel().getColumn(columnIndex);
         column.setCellRenderer(new ButtonCellRenderer(label));
         column.setCellEditor(new ButtonCellEditor(table, label, handler));
-        column.setPreferredWidth(120);
-        column.setMinWidth(110);
-        column.setMaxWidth(140);
+        column.setPreferredWidth(100);
+        column.setMinWidth(90);
+        column.setMaxWidth(110);
     }
 
     private void refreshAllData() {
@@ -686,16 +848,14 @@ public class AdminDashboard extends JFrame {
     private void openCourseDialog(Course current) {
         RoundedTextField codeField = createInputField(current != null ? current.getCode() : "");
         RoundedTextField titleField = createInputField(current != null ? current.getTitle() : "");
-        SpinnerNumberModel creditsModel = new SpinnerNumberModel(current != null ? current.getCredits() : 4, 1, 20, 1);
-        JSpinner creditsSpinner = new JSpinner(creditsModel);
-        styleSpinner(creditsSpinner);
+        RoundedTextField creditsField = createInputField(current != null ? String.valueOf(current.getCredits()) : "4");
 
         JPanel form = createFormPanel();
         GridBagConstraints gbc = createFormConstraints();
         addFormHeading(form, gbc, current == null ? "Add Course" : "Edit Course");
         addFormRow(form, gbc, "Course Code", codeField);
         addFormRow(form, gbc, "Title", titleField);
-        addFormRow(form, gbc, "Credits", wrapSpinner(creditsSpinner));
+        addFormRow(form, gbc, "Credits", creditsField);
 
         if (current != null) {
             JButton manageSectionsBtn = createButton("Manage Sections", PANEL_ACCENT, Color.WHITE);
@@ -709,7 +869,17 @@ public class AdminDashboard extends JFrame {
 
         String code = codeField.getText().trim();
         String title = titleField.getText().trim();
-        int credits = (int) creditsSpinner.getValue();
+        int credits;
+        try {
+            credits = Integer.parseInt(creditsField.getText().trim());
+            if (credits < 1 || credits > 20) {
+                showMessage("Credits must be between 1 and 20.", MessageType.ERROR);
+                return;
+            }
+        } catch (NumberFormatException e) {
+            showMessage("Please enter a valid number for credits.", MessageType.ERROR);
+            return;
+        }
 
         if (code.isEmpty() || title.isEmpty()) {
             showMessage("Code and title are required.", MessageType.ERROR);
@@ -828,6 +998,7 @@ public class AdminDashboard extends JFrame {
     private boolean openSectionForm(Section current, Course lockedCourse) {
         List<Course> courses = erpDb.getAllCourses();
         JComboBox<Course> courseCombo = new JComboBox<>(courses.toArray(new Course[0]));
+        styleComboBox(courseCombo);
         courseCombo.setRenderer(createCourseRenderer());
         if (lockedCourse != null) {
             selectCourse(courseCombo, lockedCourse.getId());
@@ -837,9 +1008,7 @@ public class AdminDashboard extends JFrame {
         }
 
         RoundedTextField nameField = createInputField(current != null ? current.getName() : "");
-        SpinnerNumberModel capacityModel = new SpinnerNumberModel(current != null ? current.getCapacity() : 60, 5, 400, 5);
-        JSpinner capacitySpinner = new JSpinner(capacityModel);
-        styleSpinner(capacitySpinner);
+        RoundedTextField capacityField = createInputField(current != null ? String.valueOf(current.getCapacity()) : "60");
 
         RoundedTextField timetableField = createInputField(current != null ? valueOrDash(current.getTimetable()) : "");
         RoundedTextField semesterField = createInputField(current != null ? valueOrDash(current.getSemester()) : "");
@@ -851,6 +1020,7 @@ public class AdminDashboard extends JFrame {
             instructorModel.addElement(instructor);
         }
         JComboBox<Instructor> instructorCombo = new JComboBox<>(instructorModel);
+        styleComboBox(instructorCombo);
         instructorCombo.setRenderer(createInstructorRenderer());
         if (current != null) {
             selectInstructor(instructorCombo, current.getInstructorId());
@@ -863,7 +1033,7 @@ public class AdminDashboard extends JFrame {
             addFormRow(form, gbc, "Course", courseCombo);
         }
         addFormRow(form, gbc, "Section Name", nameField);
-        addFormRow(form, gbc, "Capacity", wrapSpinner(capacitySpinner));
+        addFormRow(form, gbc, "Capacity", capacityField);
         addFormRow(form, gbc, "Timetable", timetableField);
         addFormRow(form, gbc, "Semester", semesterField);
         addFormRow(form, gbc, "Instructor", instructorCombo);
@@ -884,7 +1054,17 @@ public class AdminDashboard extends JFrame {
             return false;
         }
 
-        int capacity = (int) capacitySpinner.getValue();
+        int capacity;
+        try {
+            capacity = Integer.parseInt(capacityField.getText().trim());
+            if (capacity < 5 || capacity > 400) {
+                showMessage("Capacity must be between 5 and 400.", MessageType.ERROR);
+                return false;
+            }
+        } catch (NumberFormatException e) {
+            showMessage("Please enter a valid number for capacity.", MessageType.ERROR);
+            return false;
+        }
         String timetable = timetableField.getText().trim();
         String semester = semesterField.getText().trim();
         Instructor instructor = (Instructor) instructorCombo.getSelectedItem();
@@ -924,6 +1104,7 @@ public class AdminDashboard extends JFrame {
             instructorModel.addElement(instructor);
         }
         JComboBox<Instructor> comboBox = new JComboBox<>(instructorModel);
+        styleComboBox(comboBox);
         comboBox.setRenderer(createInstructorRenderer());
         selectInstructor(comboBox, section.getInstructorId());
 
@@ -1066,6 +1247,7 @@ public class AdminDashboard extends JFrame {
             return;
         }
         JComboBox<Section> sectionCombo = new JComboBox<>(sections.toArray(new Section[0]));
+        styleComboBox(sectionCombo);
         sectionCombo.setRenderer(createSectionRenderer());
 
         JPanel form = createFormPanel();
@@ -1294,74 +1476,221 @@ public class AdminDashboard extends JFrame {
     private RoundedPasswordField createPasswordField() {
         return new RoundedPasswordField();
     }
+    
+    private void styleComboBox(JComboBox<?> combo) {
+        combo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        combo.setBackground(Color.WHITE);
+        combo.setForeground(new Color(50, 50, 50));
+        combo.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(200, 200, 200)),
+            new EmptyBorder(8, 10, 8, 10)
+        ));
+        combo.setUI(new BasicComboBoxUI() {
+            @Override
+            protected JButton createArrowButton() {
+                JButton button = new JButton("▼");
+                button.setBorderPainted(false);
+                button.setContentAreaFilled(true);
+                button.setFocusPainted(false);
+                button.setOpaque(true);
+                button.setBackground(new Color(245, 245, 245));
+                button.setForeground(new Color(80, 80, 80));
+                button.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+                button.setPreferredSize(new Dimension(25, 20));
+                button.setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, new Color(200, 200, 200)));
+                button.addMouseListener(new java.awt.event.MouseAdapter() {
+                    public void mouseEntered(java.awt.event.MouseEvent evt) {
+                        button.setBackground(new Color(230, 230, 230));
+                    }
+                    public void mouseExited(java.awt.event.MouseEvent evt) {
+                        button.setBackground(new Color(245, 245, 245));
+                    }
+                });
+                return button;
+            }
+        });
+    }
 
     private void styleSpinner(JSpinner spinner) {
         spinner.setOpaque(false);
-        spinner.setBorder(null);
+        spinner.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(200, 200, 200)),
+            new EmptyBorder(0, 8, 0, 0)
+        ));
+        spinner.setUI(new BasicSpinnerUI() {
+            @Override
+            protected Component createNextButton() {
+                JButton btn = new JButton("▲");
+                styleSpinnerButton(btn);
+                installNextButtonListeners(btn);
+                return btn;
+            }
+            
+            @Override
+            protected Component createPreviousButton() {
+                JButton btn = new JButton("▼");
+                styleSpinnerButton(btn);
+                installPreviousButtonListeners(btn);
+                return btn;
+            }
+        });
+        
         JComponent editor = spinner.getEditor();
         if (editor instanceof JSpinner.DefaultEditor defaultEditor) {
             JFormattedTextField textField = defaultEditor.getTextField();
             textField.setBorder(null);
-            textField.setBackground(new Color(248, 250, 252));
-            textField.setForeground(new Color(45, 45, 45));
+            textField.setBackground(Color.WHITE);
+            textField.setForeground(new Color(50, 50, 50));
             textField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         }
     }
+    
+    private void styleSpinnerButton(JButton btn) {
+        btn.setBorderPainted(false);
+        btn.setContentAreaFilled(true);
+        btn.setFocusPainted(false);
+        btn.setOpaque(true);
+        btn.setBackground(new Color(245, 245, 245));
+        btn.setForeground(new Color(80, 80, 80));
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        btn.setPreferredSize(new Dimension(20, 15));
+        btn.setMargin(new Insets(0, 0, 0, 0));
+        btn.setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, new Color(200, 200, 200)));
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                btn.setBackground(new Color(230, 230, 230));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                btn.setBackground(new Color(245, 245, 245));
+            }
+        });
+    }
 
     private JComponent wrapSpinner(JSpinner spinner) {
-        RoundedPanel wrapper = new RoundedPanel(24, new Color(248, 250, 252));
-        wrapper.setBorder(new EmptyBorder(4, 12, 4, 12));
-        wrapper.setLayout(new BorderLayout());
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        wrapper.setBorder(new EmptyBorder(0, 0, 0, 0));
         wrapper.add(spinner, BorderLayout.CENTER);
         return wrapper;
     }
 
     private boolean showFormDialog(String title, JPanel form) {
-        Object[] options = {"Save", "Cancel"};
-        int result = JOptionPane.showOptionDialog(
-                this,
-                form,
-                title,
-                JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                options,
-                options[0]
-        );
-        return result == JOptionPane.OK_OPTION;
+        final boolean[] result = {false};
+        
+        JButton saveBtn = createButton("Save", PANEL_ACCENT, Color.WHITE);
+        JButton cancelBtn = createButton("Cancel");
+        
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        buttonPanel.setOpaque(false);
+        buttonPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        buttonPanel.add(cancelBtn);
+        buttonPanel.add(saveBtn);
+        
+        JPanel dialogPanel = new JPanel(new BorderLayout());
+        dialogPanel.setBackground(Color.WHITE);
+        dialogPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
+        dialogPanel.add(form, BorderLayout.CENTER);
+        dialogPanel.add(buttonPanel, BorderLayout.SOUTH);
+        
+        JDialog dialog = new JDialog(this, title, true);
+        dialog.setContentPane(dialogPanel);
+        dialog.setResizable(false);
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
+        
+        saveBtn.addActionListener(e -> {
+            result[0] = true;
+            dialog.setVisible(false);
+            dialog.dispose();
+        });
+        cancelBtn.addActionListener(e -> {
+            result[0] = false;
+            dialog.setVisible(false);
+            dialog.dispose();
+        });
+        
+        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        dialog.setVisible(true);
+        
+        return result[0];
     }
 
     private boolean confirmAction(String message) {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(Color.WHITE);
-        panel.setBorder(new EmptyBorder(20, 25, 20, 25));
+        final boolean[] result = {false};
+        
         JLabel label = new JLabel(message);
         label.setFont(new Font("Segoe UI", Font.BOLD, 14));
         label.setForeground(new Color(60, 60, 60));
-        panel.add(label, BorderLayout.CENTER);
-        Object[] options = {"Yes", "No"};
-        int result = JOptionPane.showOptionDialog(
-                this,
-                panel,
-                "Please Confirm",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                options,
-                options[1]
-        );
-        return result == JOptionPane.YES_OPTION;
+        label.setBorder(new EmptyBorder(20, 25, 20, 25));
+        
+        JButton yesBtn = createButton("Yes", PANEL_ACCENT, Color.WHITE);
+        JButton noBtn = createButton("No");
+        
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        buttonPanel.setOpaque(false);
+        buttonPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        buttonPanel.add(noBtn);
+        buttonPanel.add(yesBtn);
+        
+        JPanel dialogPanel = new JPanel(new BorderLayout());
+        dialogPanel.setBackground(Color.WHITE);
+        dialogPanel.add(label, BorderLayout.CENTER);
+        dialogPanel.add(buttonPanel, BorderLayout.SOUTH);
+        
+        JDialog dialog = new JDialog(this, "Please Confirm", true);
+        dialog.setContentPane(dialogPanel);
+        dialog.setResizable(false);
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
+        
+        yesBtn.addActionListener(e -> {
+            result[0] = true;
+            dialog.setVisible(false);
+            dialog.dispose();
+        });
+        noBtn.addActionListener(e -> {
+            result[0] = false;
+            dialog.setVisible(false);
+            dialog.dispose();
+        });
+        
+        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        dialog.setVisible(true);
+        
+        return result[0];
     }
 
     private void showMessage(String message, MessageType type) {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(type.background);
-        panel.setBorder(new EmptyBorder(15, 22, 15, 22));
         JLabel label = new JLabel(message);
-        label.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        label.setForeground(type.foreground);
-        panel.add(label, BorderLayout.CENTER);
-        JOptionPane.showMessageDialog(this, panel, type.title, JOptionPane.PLAIN_MESSAGE);
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        label.setForeground(new Color(50, 50, 50));
+        label.setBorder(new EmptyBorder(25, 25, 15, 25));
+        
+        JButton okBtn = createButton("OK", type.background, Color.WHITE);
+        
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        buttonPanel.setOpaque(false);
+        buttonPanel.setBorder(new EmptyBorder(0, 0, 20, 0));
+        buttonPanel.add(okBtn);
+        
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.setBackground(Color.WHITE);
+        contentPanel.add(label, BorderLayout.CENTER);
+        contentPanel.add(buttonPanel, BorderLayout.SOUTH);
+        
+        JDialog dialog = new JDialog(this, type.title, true);
+        dialog.setContentPane(contentPanel);
+        dialog.setResizable(false);
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
+        
+        okBtn.addActionListener(e -> {
+            dialog.setVisible(false);
+            dialog.dispose();
+        });
+        
+        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        dialog.setVisible(true);
     }
 
     private String valueOrDash(String value) {
@@ -1633,22 +1962,18 @@ public class AdminDashboard extends JFrame {
         }
     }
 
-    private static class ZebraTableCellRenderer extends DefaultTableCellRenderer {
-        private final Color evenColor = new Color(250, 251, 253);
-        private final Color oddColor = Color.WHITE;
-
+    private static class SimpleTableCellRenderer extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            if (!isSelected) {
-                component.setBackground(row % 2 == 0 ? evenColor : oddColor);
-                component.setForeground(new Color(45, 45, 45));
-            } else {
-                component.setBackground(new Color(210, 227, 252));
-                component.setForeground(new Color(20, 52, 99));
-            }
+            Color bgColor = isSelected ? table.getSelectionBackground() : new Color(250, 250, 250);
+            component.setBackground(bgColor);
+            component.setForeground(isSelected ? table.getSelectionForeground() : new Color(50, 50, 50));
             if (component instanceof JComponent jComponent) {
-                jComponent.setBorder(new EmptyBorder(0, 12, 0, 12));
+                jComponent.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 1, new Color(230, 230, 230)),
+                    new EmptyBorder(10, 14, 10, 14)
+                ));
             }
             return component;
         }
@@ -1657,6 +1982,9 @@ public class AdminDashboard extends JFrame {
     private class ButtonCellRenderer extends RoundedButton implements TableCellRenderer {
         ButtonCellRenderer(String text) {
             super(text, new Color(66, 133, 244), Color.WHITE);
+            setFont(new Font("Segoe UI", Font.BOLD, 12));
+            setMargin(new Insets(6, 12, 6, 12));
+            setPreferredSize(new Dimension(90, 30));
         }
 
         @Override
@@ -1675,6 +2003,9 @@ public class AdminDashboard extends JFrame {
             this.table = table;
             this.handler = handler;
             this.button = new RoundedButton(label, new Color(66, 133, 244), Color.WHITE);
+            this.button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            this.button.setMargin(new Insets(6, 12, 6, 12));
+            this.button.setPreferredSize(new Dimension(90, 30));
             this.button.addActionListener(this);
         }
 
