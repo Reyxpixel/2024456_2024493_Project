@@ -24,13 +24,6 @@ public class AuthDB {
         }
     }
 
-    public static ResultSet getUser(String username) throws Exception {
-        Connection conn = connect();
-        Statement stmt = conn.createStatement();
-        String sql = "SELECT * FROM users WHERE username='" + username + "'";
-        return stmt.executeQuery(sql);
-    }
-
     public static void addUser(String username, String passwordHash, String role) throws Exception {
         String sql = "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)";
         try (Connection conn = connect();

@@ -3,19 +3,25 @@ package service;
 import db.AuthDB;
 import model.User;
 import util.PasswordUtils;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 public class AuthService {
 
     public static User login(String username, String password) {
-        try {
-            ResultSet rs = AuthDB.getUser(username);
-            if (rs.next()) {
-                String storedHash = rs.getString("password_hash");
-                String role = rs.getString("role");
+        String sql = "SELECT username, password_hash, role FROM users WHERE username=?";
+        try (Connection conn = AuthDB.connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, username);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    String storedHash = rs.getString("password_hash");
+                    String role = rs.getString("role");
 
-                if (storedHash.equals(PasswordUtils.hashPassword(password))) {
-                    return new User(username, storedHash, role);
+                    if (storedHash.equals(PasswordUtils.hashPassword(password))) {
+                        return new User(username, storedHash, role);
+                    }
                 }
             }
         } catch (Exception e) {
