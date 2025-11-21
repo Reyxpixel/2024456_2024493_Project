@@ -1,0 +1,115 @@
+## Main Dashboard Layout
+
+### 1. **Top Navigation Bar**
+
+-   Positioned horizontally across the top.
+-   Contains navigation buttons/tabs:
+    -   **Dashboard**
+    -   **Courses**
+    -   **Instructors**
+    -   **Sections**
+    -   **Students**
+    -   **Statistics**
+-   Buttons are large, rounded, and colored similarly to the existing UI
+    theme.
+
+### 2. **Dashboard Home View**
+
+When the admin logs in, they see: **Total Courses** -
+**Total Instructors** - **Total Students**- Cards
+are colorful, modern, and clickable (navigate to modules).
+
+## Courses Panel (Detailed)
+### Layout
+-   Top action bar with buttons:
+    -   **Add Course**
+    -   **Delete Selected**
+    -   **Sections**
+    -   **Refresh**
+-   Table below with columns:
+    -   **ID**
+    -   **Code**
+    -   **Title**
+    -   **Credits**
+-   Each row displays a course and allows editing through a blue rounded rectangular button that says edit in each row.
+-   Edit button will open the current edit window but will also have an addition to manage sections.
+
+### Section Management
+
+-   Clicking **Edit** opens a **new window** corresponding to the course row.
+-   That window contains:
+    -   Table of sections for the selected course, with columns: **Instructor**, section name (A, B, C), section capacity, timetable
+    -   Buttons to:
+        -   **Add Section**
+        -   **Edit Section**
+        -   **Delete Section**
+    -   Simple layout, similar styling to course dialogs.
+## Instructors Panel
+-   Table listing:
+    -   ID\
+    -   Name\
+    -   Email\
+    -   Department\
+    -   Assigned Courses\
+-   Actions:
+    -   Add Instructor\
+    -   Edit Selected\
+    -   Delete Selected
+
+## Sections Panel
+
+(Full panel view separate from the per-course section editor) - Table
+showing: - Section ID\
+- Course Code\
+- Instructor\
+- Capacity\
+- Student Count\
+- Actions: - Add Section\
+- Edit Selected\
+- Assign Instructor\
+- View Students\
+- Delete
+
+------------------------------------------------------------------------
+
+## Students Panel
+
+-   Table of student records:
+    -   ID\
+    -   Name\
+    -   Email\
+    -   Enrolled Courses\
+    -   Actions\
+-   Buttons:
+    -   Add Student\
+    -   Edit Selected\
+    -   Delete Selected\
+    -   Enroll in Course
+
+------------------------------------------------------------------------
+
+## Statistics Panel
+
+-   Graphs and analytics (future phase)
+    -   Course enrollments
+    -   Instructor loads
+    -   Student performance indicators
+
+------------------------------------------------------------------------
+
+## UI Styling Guidelines
+
+-   Rounded buttons with consistent color palette.
+-   Tables with alternating row shading.
+-   Dialog windows use:
+    -   Grid layout form fields
+    -   OK / Cancel buttons
+-   All panels use margins, padding, and spacing for clean separation.
+
+------------------------------------------------------------------------
+
+## Final Goal
+
+A **fully functional, modular, and intuitive Admin Dashboard** that: -
+Is visually consistent - Provides fast access to every module - Allows
+CRUD operations cleanly - Remains simple for future expansion
