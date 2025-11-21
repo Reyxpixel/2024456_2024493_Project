@@ -12,68 +12,69 @@ public class erpDB {
 
     public erpDB() {
         String students = """
-        CREATE TABLE IF NOT EXISTS Student (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            name TEXT NOT NULL,
-            major TEXT
-        );
-    """;
+                CREATE TABLE IF NOT EXISTS students (
+                    student_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    email TEXT UNIQUE NOT NULL,
+                    program TEXT
+                );
+                """;
 
         String instructors = """
-        CREATE TABLE IF NOT EXISTS Instructor (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            name TEXT NOT NULL,
-            department TEXT
-        );
-    """;
+                CREATE TABLE IF NOT EXISTS instructors (
+                    instructor_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    email TEXT UNIQUE NOT NULL,
+                    department TEXT
+                );
+                """;
 
         String courses = """
-        CREATE TABLE IF NOT EXISTS courses (
-            course_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            code TEXT UNIQUE NOT NULL,
-            title TEXT NOT NULL,
-            credits INTEGER
-        );
-    """;
+                CREATE TABLE IF NOT EXISTS courses (
+                    course_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    code TEXT UNIQUE NOT NULL,
+                    title TEXT NOT NULL,
+                    credits INTEGER
+                );
+                """;
 
         String sections = """
-        CREATE TABLE IF NOT EXISTS sections (
-            section_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            course_id INTEGER NOT NULL,
-            instructor_id INTEGER NOT NULL,
-            semester TEXT NOT NULL,
-            FOREIGN KEY(course_id) REFERENCES courses(course_id),
-            FOREIGN KEY(instructor_id) REFERENCES instructors(instructor_id)
-        );
-    """;
+                CREATE TABLE IF NOT EXISTS sections (
+                    section_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    course_id INTEGER NOT NULL,
+                    instructor_id INTEGER NOT NULL,
+                    semester TEXT NOT NULL,
+                    FOREIGN KEY(course_id) REFERENCES courses(course_id),
+                    FOREIGN KEY(instructor_id) REFERENCES instructors(instructor_id)
+                );
+                """;
 
         String enrollments = """
-        CREATE TABLE IF NOT EXISTS enrollments (
-            enroll_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            student_id INTEGER NOT NULL,
-            section_id INTEGER NOT NULL,
-            FOREIGN KEY(student_id) REFERENCES students(student_id),
-            FOREIGN KEY(section_id) REFERENCES sections(section_id)
-        );
-    """;
+                CREATE TABLE IF NOT EXISTS enrollments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    student_id INTEGER NOT NULL,
+                    section_id INTEGER NOT NULL,
+                    grade_id INTEGER,
+                    FOREIGN KEY(student_id) REFERENCES students(student_id),
+                    FOREIGN KEY(section_id) REFERENCES sections(section_id)
+                );
+                """;
 
         String grades = """
-        CREATE TABLE IF NOT EXISTS grades (
-            grade_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            enroll_id INTEGER NOT NULL,
-            grade TEXT,
-            FOREIGN KEY(enroll_id) REFERENCES enrollments(enroll_id)
-        );
-    """;
+                CREATE TABLE IF NOT EXISTS grades (
+                    grade_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    enroll_id INTEGER NOT NULL,
+                    grade TEXT,
+                    FOREIGN KEY(enroll_id) REFERENCES enrollments(id)
+                );
+                """;
 
         String settings = """
-        CREATE TABLE IF NOT EXISTS settings (
-            key TEXT PRIMARY KEY,
-            value TEXT
-        );
-    """;
+                CREATE TABLE IF NOT EXISTS settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT
+                );
+                """;
 
         try (Connection conn = connect();
              Statement stmt = conn.createStatement()) {
@@ -90,29 +91,19 @@ public class erpDB {
             e.printStackTrace();
         }
     }
-    private static Connection connect() {
-        Connection conn = null;
 
-        try {
-            // IMPORTANT: Update the file path to match your project
-            String url = "jdbc:sqlite:erp.db";
-            conn = DriverManager.getConnection(url);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return conn;
+    private static Connection connect() throws SQLException {
+        return DriverManager.getConnection(DB_URL);
     }
     public boolean addStudent(String name, String email, String program) {
-        try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
+        String sql = "INSERT INTO students (name, email, program) VALUES (?, ?, ?)";
+        try (Connection conn = connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            String sql = "INSERT INTO students (name, email, program) VALUES (" +
-                    "'" + name + "', " +
-                    "'" + email + "', " +
-                    "'" + program + "'" +
-                    ");";
-
-            stmt.execute(sql);
+            stmt.setString(1, name);
+            stmt.setString(2, email);
+            stmt.setString(3, program);
+            stmt.executeUpdate();
             return true;
 
         } catch (Exception e) {
@@ -121,11 +112,12 @@ public class erpDB {
         }
     }
     public Student getStudentById(int id) {
+        String sql = "SELECT * FROM students WHERE student_id = ?";
         try (Connection conn = connect();
-             Statement stmt = conn.createStatement()) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            String sql = "SELECT * FROM students WHERE student_id = " + id + ";";
-            ResultSet rs = stmt.executeQuery(sql);
+            stmt.setInt(1, id);
+            ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
                 return new Student(
@@ -144,11 +136,10 @@ public class erpDB {
     public List<Student> getAllStudents() {
         List<Student> list = new ArrayList<>();
 
+        String sql = "SELECT * FROM students ORDER BY name";
         try (Connection conn = connect();
-             Statement stmt = conn.createStatement()) {
-
-            String sql = "SELECT * FROM students;";
-            ResultSet rs = stmt.executeQuery(sql);
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
                 list.add(new Student(
@@ -165,15 +156,15 @@ public class erpDB {
         return list;
     }
     public boolean updateStudent(int id, String name, String email, String program) {
-        try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
+        String sql = "UPDATE students SET name=?, email=?, program=? WHERE student_id=?";
+        try (Connection conn = connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            String sql = "UPDATE students SET " +
-                    "name='" + name + "', " +
-                    "email='" + email + "', " +
-                    "program='" + program + "' " +
-                    "WHERE student_id=" + id + ";";
-
-            stmt.execute(sql);
+            stmt.setString(1, name);
+            stmt.setString(2, email);
+            stmt.setString(3, program);
+            stmt.setInt(4, id);
+            stmt.executeUpdate();
             return true;
 
         } catch (Exception e) {
@@ -182,10 +173,12 @@ public class erpDB {
         }
     }
     public boolean deleteStudent(int id) {
-        try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
+        String sql = "DELETE FROM students WHERE student_id=?";
+        try (Connection conn = connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            String sql = "DELETE FROM students WHERE student_id=" + id + ";";
-            stmt.execute(sql);
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
             return true;
 
         } catch (Exception e) {
@@ -193,16 +186,16 @@ public class erpDB {
             return false;
         }
     }
+
     public boolean addInstructor(String name, String email, String department) {
-        try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
+        String sql = "INSERT INTO instructors (name, email, department) VALUES (?, ?, ?)";
+        try (Connection conn = connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            String sql = "INSERT INTO instructors (name, email, department) VALUES (" +
-                    "'" + name + "', " +
-                    "'" + email + "', " +
-                    "'" + department + "'" +
-                    ");";
-
-            stmt.execute(sql);
+            stmt.setString(1, name);
+            stmt.setString(2, email);
+            stmt.setString(3, department);
+            stmt.executeUpdate();
             return true;
 
         } catch (Exception e) {
@@ -211,11 +204,12 @@ public class erpDB {
         }
     }
     public Instructor getInstructorById(int id) {
+        String sql = "SELECT * FROM instructors WHERE instructor_id = ?";
         try (Connection conn = connect();
-             Statement stmt = conn.createStatement()) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            String sql = "SELECT * FROM instructors WHERE instructor_id = " + id + ";";
-            ResultSet rs = stmt.executeQuery(sql);
+            stmt.setInt(1, id);
+            ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
                 return new Instructor(
@@ -234,11 +228,10 @@ public class erpDB {
     public List<Instructor> getAllInstructors() {
         List<Instructor> list = new ArrayList<>();
 
+        String sql = "SELECT * FROM instructors ORDER BY name";
         try (Connection conn = connect();
-             Statement stmt = conn.createStatement()) {
-
-            String sql = "SELECT * FROM instructors;";
-            ResultSet rs = stmt.executeQuery(sql);
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
                 list.add(new Instructor(
@@ -255,15 +248,15 @@ public class erpDB {
         return list;
     }
     public boolean updateInstructor(int id, String name, String email, String department) {
-        try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
+        String sql = "UPDATE instructors SET name=?, email=?, department=? WHERE instructor_id=?";
+        try (Connection conn = connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            String sql = "UPDATE instructors SET " +
-                    "name='" + name + "', " +
-                    "email='" + email + "', " +
-                    "department='" + department + "' " +
-                    "WHERE instructor_id=" + id + ";";
-
-            stmt.execute(sql);
+            stmt.setString(1, name);
+            stmt.setString(2, email);
+            stmt.setString(3, department);
+            stmt.setInt(4, id);
+            stmt.executeUpdate();
             return true;
 
         } catch (Exception e) {
@@ -272,10 +265,12 @@ public class erpDB {
         }
     }
     public boolean deleteInstructor(int id) {
-        try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
+        String sql = "DELETE FROM instructors WHERE instructor_id=?";
+        try (Connection conn = connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            String sql = "DELETE FROM instructors WHERE instructor_id=" + id + ";";
-            stmt.execute(sql);
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
             return true;
 
         } catch (Exception e) {
@@ -283,16 +278,16 @@ public class erpDB {
             return false;
         }
     }
+
     public boolean addCourse(String code, String title, int credits) {
-        try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
+        String sql = "INSERT INTO courses (code, title, credits) VALUES (?, ?, ?)";
+        try (Connection conn = connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            String sql = "INSERT INTO courses (code, title, credits) VALUES (" +
-                    "'" + code + "', " +
-                    "'" + title + "', " +
-                    credits +
-                    ");";
-
-            stmt.execute(sql);
+            stmt.setString(1, code);
+            stmt.setString(2, title);
+            stmt.setInt(3, credits);
+            stmt.executeUpdate();
             return true;
 
         } catch (Exception e) {
@@ -301,11 +296,12 @@ public class erpDB {
         }
     }
     public Course getCourseById(int id) {
+        String sql = "SELECT * FROM courses WHERE course_id = ?";
         try (Connection conn = connect();
-             Statement stmt = conn.createStatement()) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            String sql = "SELECT * FROM courses WHERE course_id = " + id + ";";
-            ResultSet rs = stmt.executeQuery(sql);
+            stmt.setInt(1, id);
+            ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
                 return new Course(
@@ -324,11 +320,10 @@ public class erpDB {
     public List<Course> getAllCourses() {
         List<Course> list = new ArrayList<>();
 
+        String sql = "SELECT * FROM courses ORDER BY code";
         try (Connection conn = connect();
-             Statement stmt = conn.createStatement()) {
-
-            String sql = "SELECT * FROM courses;";
-            ResultSet rs = stmt.executeQuery(sql);
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
                 list.add(new Course(
@@ -345,15 +340,15 @@ public class erpDB {
         return list;
     }
     public boolean updateCourse(int id, String code, String title, int credits) {
-        try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
+        String sql = "UPDATE courses SET code=?, title=?, credits=? WHERE course_id=?";
+        try (Connection conn = connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            String sql = "UPDATE courses SET " +
-                    "code='" + code + "', " +
-                    "title='" + title + "', " +
-                    "credits=" + credits + " " +
-                    "WHERE course_id=" + id + ";";
-
-            stmt.execute(sql);
+            stmt.setString(1, code);
+            stmt.setString(2, title);
+            stmt.setInt(3, credits);
+            stmt.setInt(4, id);
+            stmt.executeUpdate();
             return true;
 
         } catch (Exception e) {
@@ -362,10 +357,12 @@ public class erpDB {
         }
     }
     public boolean deleteCourse(int id) {
-        try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
+        String sql = "DELETE FROM courses WHERE course_id=?";
+        try (Connection conn = connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            String sql = "DELETE FROM courses WHERE course_id=" + id + ";";
-            stmt.execute(sql);
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
             return true;
 
         } catch (Exception e) {
@@ -374,15 +371,14 @@ public class erpDB {
         }
     }
     public boolean addSection(int courseId, int instructorId, String semester) {
-        try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
+        String sql = "INSERT INTO sections (course_id, instructor_id, semester) VALUES (?, ?, ?)";
+        try (Connection conn = connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            String sql = "INSERT INTO sections (course_id, instructor_id, semester) VALUES (" +
-                    courseId + ", " +
-                    instructorId + ", " +
-                    "'" + semester + "'" +
-                    ");";
-
-            stmt.execute(sql);
+            stmt.setInt(1, courseId);
+            stmt.setInt(2, instructorId);
+            stmt.setString(3, semester);
+            stmt.executeUpdate();
             return true;
 
         } catch (Exception e) {
@@ -391,11 +387,12 @@ public class erpDB {
         }
     }
     public Section getSectionById(int id) {
+        String sql = "SELECT * FROM sections WHERE section_id = ?";
         try (Connection conn = connect();
-             Statement stmt = conn.createStatement()) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            String sql = "SELECT * FROM sections WHERE section_id = " + id + ";";
-            ResultSet rs = stmt.executeQuery(sql);
+            stmt.setInt(1, id);
+            ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
                 return new Section(
@@ -414,11 +411,10 @@ public class erpDB {
     public List<Section> getAllSections() {
         List<Section> list = new ArrayList<>();
 
+        String sql = "SELECT * FROM sections";
         try (Connection conn = connect();
-             Statement stmt = conn.createStatement()) {
-
-            String sql = "SELECT * FROM sections;";
-            ResultSet rs = stmt.executeQuery(sql);
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
                 list.add(new Section(
@@ -435,15 +431,15 @@ public class erpDB {
         return list;
     }
     public boolean updateSection(int id, int courseId, int instructorId, String semester) {
-        try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
+        String sql = "UPDATE sections SET course_id=?, instructor_id=?, semester=? WHERE section_id=?";
+        try (Connection conn = connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            String sql = "UPDATE sections SET " +
-                    "course_id=" + courseId + ", " +
-                    "instructor_id=" + instructorId + ", " +
-                    "semester='" + semester + "' " +
-                    "WHERE section_id=" + id + ";";
-
-            stmt.execute(sql);
+            stmt.setInt(1, courseId);
+            stmt.setInt(2, instructorId);
+            stmt.setString(3, semester);
+            stmt.setInt(4, id);
+            stmt.executeUpdate();
             return true;
 
         } catch (Exception e) {
@@ -452,10 +448,12 @@ public class erpDB {
         }
     }
     public boolean deleteSection(int id) {
-        try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
+        String sql = "DELETE FROM sections WHERE section_id=?";
+        try (Connection conn = connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            String sql = "DELETE FROM sections WHERE section_id=" + id + ";";
-            stmt.execute(sql);
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
             return true;
 
         } catch (Exception e) {
@@ -609,18 +607,44 @@ public class erpDB {
         }
         return list;
     }
+
     public static ResultSet getStudentByEmail(String email) throws Exception {
+        String sql = "SELECT * FROM students WHERE email=?";
         Connection conn = connect();
-        Statement stmt = conn.createStatement();
-        String sql = "SELECT * FROM students WHERE email='" + email + "'";
-        return stmt.executeQuery(sql);
+        PreparedStatement stmt = conn.prepareStatement(sql);
+        stmt.setString(1, email);
+        return stmt.executeQuery();
     }
+
     public static ResultSet getInstructorByEmail(String email) throws Exception {
+        String sql = "SELECT * FROM instructors WHERE email=?";
         Connection conn = connect();
-        Statement stmt = conn.createStatement();
-        String sql = "SELECT * FROM instructors WHERE email='" + email + "'";
-        return stmt.executeQuery(sql);
+        PreparedStatement stmt = conn.prepareStatement(sql);
+        stmt.setString(1, email);
+        return stmt.executeQuery();
     }
 
+    public int getStudentCount() {
+        return getCount("students");
+    }
 
+    public int getInstructorCount() {
+        return getCount("instructors");
+    }
+
+    public int getCourseCount() {
+        return getCount("courses");
+    }
+
+    private int getCount(String table) {
+        String sql = "SELECT COUNT(*) FROM " + table;
+        try (Connection conn = connect();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            return rs.next() ? rs.getInt(1) : 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
 }

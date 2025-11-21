@@ -16,7 +16,7 @@ public class ErpService {
             ResultSet rs = erpDB.getStudentByEmail(email);
             if (rs.next()) {
                 return new Student(
-                        rs.getInt("id"),
+                        rs.getInt("student_id"),
                         rs.getString("name"),
                         rs.getString("email"),
                         rs.getString("program")
@@ -32,7 +32,7 @@ public class ErpService {
             ResultSet rs = erpDB.getInstructorByEmail(email);
             if (rs.next()) {
                 return new Instructor(
-                        rs.getInt("id"),
+                        rs.getInt("instructor_id"),
                         rs.getString("name"),
                         rs.getString("email"),
                         rs.getString("department")

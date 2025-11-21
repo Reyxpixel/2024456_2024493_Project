@@ -2,6 +2,7 @@ package db;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.sql.ResultSet;
 
@@ -31,11 +32,13 @@ public class AuthDB {
     }
 
     public static void addUser(String username, String passwordHash, String role) throws Exception {
+        String sql = "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)";
         try (Connection conn = connect();
-             Statement stmt = conn.createStatement()) {
-            String sql = "INSERT INTO users (username, password_hash, role) " +
-                    "VALUES ('" + username + "', '" + passwordHash + "', '" + role + "')";
-            stmt.executeUpdate(sql);
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, username);
+            stmt.setString(2, passwordHash);
+            stmt.setString(3, role);
+            stmt.executeUpdate();
         }
     }
 
@@ -46,6 +49,31 @@ public class AuthDB {
             ResultSet rs = stmt.executeQuery(sql);
             return rs.next();
         } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public static boolean updatePassword(String username, String passwordHash) {
+        String sql = "UPDATE users SET password_hash=? WHERE username=?";
+        try (Connection conn = connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, passwordHash);
+            stmt.setString(2, username);
+            return stmt.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static boolean deleteUser(String username) {
+        String sql = "DELETE FROM users WHERE username=?";
+        try (Connection conn = connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, username);
+            return stmt.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
             return false;
         }
     }

@@ -2,14 +2,10 @@ package service;
 
 import db.AuthDB;
 import model.User;
-import util.*;
+import util.PasswordUtils;
 import java.sql.ResultSet;
 
 public class AuthService {
-
-    private static String hash(String password) {
-        return Integer.toHexString(password.hashCode());
-    }
 
     public static User login(String username, String password) {
         try {
@@ -18,7 +14,7 @@ public class AuthService {
                 String storedHash = rs.getString("password_hash");
                 String role = rs.getString("role");
 
-                if (storedHash.equals(util.PasswordUtils.hashPassword(password))) {
+                if (storedHash.equals(PasswordUtils.hashPassword(password))) {
                     return new User(username, storedHash, role);
                 }
             }
@@ -28,18 +24,33 @@ public class AuthService {
         return null; // login failed
     }
 
-    public static void register(String username, String password, String role) {
+    public static boolean register(String username, String password, String role) {
         try {
             if (AuthDB.userExists(username)) {
                 System.out.println("User already exists: " + username);
-                return;
+                return false;
             }
             String hash = PasswordUtils.hashPassword(password);
             AuthDB.addUser(username, hash, role);
             System.out.println("User registered: " + username);
+            return true;
         } catch (Exception e) {
             e.printStackTrace();
+            return false;
         }
+    }
+
+    public static boolean changePassword(String username, String currentPassword, String newPassword) {
+        User existing = login(username, currentPassword);
+        if (existing == null) {
+            return false;
+        }
+        String newHash = PasswordUtils.hashPassword(newPassword);
+        return AuthDB.updatePassword(username, newHash);
+    }
+
+    public static boolean deleteUser(String username) {
+        return AuthDB.deleteUser(username);
     }
 
 }
