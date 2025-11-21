@@ -1,7 +1,6 @@
 package db;
 
 import model.*;
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,14 +42,19 @@ public class erpDB {
                     section_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     course_id INTEGER NOT NULL,
                     instructor_id INTEGER,
+<<<<<<< HEAD
                     name TEXT NOT NULL DEFAULT 'Section A',
                     capacity INTEGER NOT NULL DEFAULT 60,
                     timetable TEXT,
                     semester TEXT,
+=======
+                    capacity INTEGER,
+>>>>>>> a19db90af34c1b2d4bba788ca824308a2bab989f
                     FOREIGN KEY(course_id) REFERENCES courses(course_id),
                     FOREIGN KEY(instructor_id) REFERENCES instructors(instructor_id)
                 );
                 """;
+
 
         String enrollments = """
                 CREATE TABLE IF NOT EXISTS enrollments (
@@ -299,6 +303,7 @@ public class erpDB {
             return false;
         }
     }
+
     public Course getCourseById(int id) {
         String sql = "SELECT * FROM courses WHERE course_id = ?";
         try (Connection conn = connect();
@@ -374,6 +379,7 @@ public class erpDB {
             return false;
         }
     }
+<<<<<<< HEAD
     public boolean addSection(int courseId,
                               Integer instructorId,
                               String name,
@@ -381,10 +387,16 @@ public class erpDB {
                               String timetable,
                               String semester) {
         String sql = "INSERT INTO sections (course_id, instructor_id, name, capacity, timetable, semester) VALUES (?, ?, ?, ?, ?, ?)";
+=======
+    // addSection
+    public boolean addSection(int courseId, Integer instructorId, String schedule, String room, int capacity) {
+        String sql = "INSERT INTO sections (course_id, instructor_id, schedule, room, capacity) VALUES (?, ?, ?, ?, ?)";
+>>>>>>> a19db90af34c1b2d4bba788ca824308a2bab989f
         try (Connection conn = connect();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, courseId);
+<<<<<<< HEAD
             if (instructorId == null) {
                 stmt.setNull(2, Types.INTEGER);
             } else {
@@ -394,14 +406,22 @@ public class erpDB {
             stmt.setInt(4, capacity);
             stmt.setString(5, timetable);
             stmt.setString(6, semester);
+=======
+            if (instructorId == null) stmt.setNull(2, java.sql.Types.INTEGER);
+            else stmt.setInt(2, instructorId);
+            stmt.setString(3, schedule);
+            stmt.setString(4, room);
+            stmt.setInt(5, capacity);
+>>>>>>> a19db90af34c1b2d4bba788ca824308a2bab989f
             stmt.executeUpdate();
             return true;
-
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
     }
+
+    // getSectionById
     public Section getSectionById(int id) {
         String sql = "SELECT * FROM sections WHERE section_id = ?";
         try (Connection conn = connect();
@@ -409,16 +429,26 @@ public class erpDB {
 
             stmt.setInt(1, id);
             ResultSet rs = stmt.executeQuery();
-
             if (rs.next()) {
+<<<<<<< HEAD
                 return mapSection(rs);
+=======
+                return new Section(
+                        rs.getInt("section_id"),
+                        rs.getInt("course_id"),
+                        rs.getInt("instructor_id"),
+                        rs.getString("schedule"),
+                        rs.getString("room"),
+                        rs.getInt("capacity")
+                );
+>>>>>>> a19db90af34c1b2d4bba788ca824308a2bab989f
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
     }
+<<<<<<< HEAD
     public List<Section> getSectionsByCourse(int courseId) {
         List<Section> list = new ArrayList<>();
         String sql = "SELECT * FROM sections WHERE course_id = ? ORDER BY name";
@@ -439,19 +469,112 @@ public class erpDB {
         List<Section> list = new ArrayList<>();
 
         String sql = "SELECT * FROM sections ORDER BY section_id DESC";
+=======
+
+    // getSectionsByCourse
+    public java.util.List<Section> getSectionsByCourse(int courseId) {
+        java.util.List<Section> list = new java.util.ArrayList<>();
+        String sql = "SELECT * FROM sections WHERE course_id = ? ORDER BY section_id";
         try (Connection conn = connect();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
+            stmt.setInt(1, courseId);
+            ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
-                list.add(mapSection(rs));
+                list.add(new Section(
+                        rs.getInt("section_id"),
+                        rs.getInt("course_id"),
+                        rs.getInt("instructor_id"),
+                        rs.getString("schedule"),
+                        rs.getString("room"),
+                        rs.getInt("capacity")
+                ));
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
         return list;
     }
+    public int getSectionCountForCourse(int courseId) {
+        String sql = "SELECT COUNT(*) AS total FROM sections WHERE course_id = ?";
+        try (Connection conn = connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, courseId);
+            ResultSet rs = stmt.executeQuery();
+
+            return rs.next() ? rs.getInt("total") : 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
+    public String getInstructorNameForCourse(int courseId) {
+        String sql = """
+            SELECT i.name 
+            FROM instructors i
+            JOIN sections s ON i.instructor_id = s.instructor_id
+            WHERE s.course_id = ?
+            """;
+
+        try (Connection conn = connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, courseId);
+            ResultSet rs = stmt.executeQuery();
+
+            String first = null;
+            boolean multiple = false;
+
+            while (rs.next()) {
+                if (first == null) {
+                    first = rs.getString("name");
+                } else {
+                    multiple = true;
+                    break;
+                }
+            }
+
+            if (first == null) return "";
+            if (multiple) return "Multiple";
+            return first;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+
+    // getAllSections
+    public java.util.List<Section> getAllSections() {
+        java.util.List<Section> list = new java.util.ArrayList<>();
+        String sql = "SELECT * FROM sections ORDER BY course_id, section_id";
+>>>>>>> a19db90af34c1b2d4bba788ca824308a2bab989f
+        try (Connection conn = connect();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+<<<<<<< HEAD
+                list.add(mapSection(rs));
+=======
+                list.add(new Section(
+                        rs.getInt("section_id"),
+                        rs.getInt("course_id"),
+                        rs.getInt("instructor_id"),
+                        rs.getString("schedule"),
+                        rs.getString("room"),
+                        rs.getInt("capacity")
+                ));
+>>>>>>> a19db90af34c1b2d4bba788ca824308a2bab989f
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+<<<<<<< HEAD
     public boolean updateSection(int id,
                                  int courseId,
                                  Integer instructorId,
@@ -474,29 +597,45 @@ public class erpDB {
             stmt.setString(5, timetable);
             stmt.setString(6, semester);
             stmt.setInt(7, id);
+=======
+
+    // updateSection
+    public boolean updateSection(int id, Integer instructorId, String schedule, String room, int capacity) {
+        String sql = "UPDATE sections SET instructor_id = ?, schedule = ?, room = ?, capacity = ? WHERE section_id = ?";
+        try (Connection conn = connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            if (instructorId == null) stmt.setNull(1, java.sql.Types.INTEGER);
+            else stmt.setInt(1, instructorId);
+            stmt.setString(2, schedule);
+            stmt.setString(3, room);
+            stmt.setInt(4, capacity);
+            stmt.setInt(5, id);
+>>>>>>> a19db90af34c1b2d4bba788ca824308a2bab989f
             stmt.executeUpdate();
             return true;
-
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
     }
+
+    // deleteSection
     public boolean deleteSection(int id) {
-        String sql = "DELETE FROM sections WHERE section_id=?";
+        String sql = "DELETE FROM sections WHERE section_id = ?";
         try (Connection conn = connect();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, id);
             stmt.executeUpdate();
             return true;
-
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
     }
 
+<<<<<<< HEAD
     public boolean assignInstructorToSection(int sectionId, Integer instructorId) {
         String sql = "UPDATE sections SET instructor_id=? WHERE section_id=?";
         try (Connection conn = connect();
@@ -517,20 +656,31 @@ public class erpDB {
 
     public int getEnrollmentCountForSection(int sectionId) {
         String sql = "SELECT COUNT(*) FROM enrollments WHERE section_id = ?";
+=======
+    // helper: get student count for a section (useful in UI)
+    public int getStudentCountForSection(int sectionId) {
+        String sql = "SELECT COUNT(*) AS cnt FROM enrollments WHERE section_id = ?";
+>>>>>>> a19db90af34c1b2d4bba788ca824308a2bab989f
         try (Connection conn = connect();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, sectionId);
             ResultSet rs = stmt.executeQuery();
+<<<<<<< HEAD
             if (rs.next()) {
                 return rs.getInt(1);
             }
         } catch (SQLException e) {
+=======
+            if (rs.next()) return rs.getInt("cnt");
+        } catch (Exception e) {
+>>>>>>> a19db90af34c1b2d4bba788ca824308a2bab989f
             e.printStackTrace();
         }
         return 0;
     }
 
+<<<<<<< HEAD
     public List<Student> getStudentsForSection(int sectionId) {
         List<Student> list = new ArrayList<>();
         String sql = """
@@ -558,6 +708,8 @@ public class erpDB {
         }
         return list;
     }
+=======
+>>>>>>> a19db90af34c1b2d4bba788ca824308a2bab989f
     public boolean createEnrollment(int studentId, int sectionId) {
         String sql = "INSERT INTO enrollments (student_id, section_id, grade_id) VALUES (?, ?, NULL)";
         try (Connection conn = connect();

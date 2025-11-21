@@ -43,4 +43,25 @@ public class ErpService {
         }
         return null;
     }
+    // Sections
+    public java.util.List<Section> getSectionsByCourse(int courseId) {
+        return db.getSectionsByCourse(courseId);
+    }
+
+    public boolean addSection(int courseId, Integer instructorId, String schedule, String room, int capacity) {
+        return db.addSection(courseId, instructorId, schedule, room, capacity);
+    }
+
+    public boolean updateSection(int id, Integer instructorId, String schedule, String room, int capacity) {
+        return db.updateSection(id, instructorId, schedule, room, capacity);
+    }
+
+    public boolean deleteSection(int id) {
+        return db.deleteSection(id);
+    }
+
+    public int getStudentCountForSection(int sectionId) {
+        return db.getStudentCountForSection(sectionId);
+    }
+
 }
