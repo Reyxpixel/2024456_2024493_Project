@@ -1,11 +1,7 @@
 package ui;
 
 import db.erpDB;
-import model.Course;
-import model.Instructor;
-import model.Settings;
-import model.Student;
-import model.User;
+import model.*;
 import service.AuthService;
 
 import javax.swing.*;
@@ -16,7 +12,12 @@ import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import javax.imageio.ImageIO;
+import javax.swing.table.JTableHeader;
 import java.util.List;
+import javax.swing.*;
+import javax.swing.table.TableCellEditor;
+import java.awt.*;
+import java.awt.event.*;
 
 public class AdminDashboard extends JFrame {
     private final User user;
@@ -180,39 +181,68 @@ public class AdminDashboard extends JFrame {
         card.add(valueLabel, BorderLayout.CENTER);
         return card;
     }
-
     private JPanel createCoursesPanel() {
         courseTable = buildTable(new String[]{"ID", "Code", "Title", "Credits"});
-
         JButton addBtn = createButton("Add Course", new Color(52, 152, 219));
         addBtn.addActionListener(e -> openCourseDialog(null));
-
         JButton editBtn = createButton("Edit Selected", new Color(108, 117, 125));
-        editBtn.addActionListener(e -> {
-            Course selected = getSelectedCourse();
-            if (selected != null) {
-                openCourseDialog(selected);
-            }
-        });
-
+        editBtn.addActionListener(e -> { Course selected = getSelectedCourse();
+            if (selected != null) { openCourseDialog(selected); } });
         JButton deleteBtn = createButton("Delete Selected", new Color(231, 76, 60));
         deleteBtn.addActionListener(e -> deleteCourse());
-
         JButton refreshBtn = createButton("Refresh", new Color(40, 167, 69));
         refreshBtn.addActionListener(e -> loadCourses());
-
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
-        actions.add(addBtn);
-        actions.add(editBtn);
-        actions.add(deleteBtn);
-        actions.add(refreshBtn);
-
+        actions.add(addBtn); actions.add(editBtn);
+        actions.add(deleteBtn); actions.add(refreshBtn);
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setBorder(new EmptyBorder(10, 10, 10, 10));
         wrapper.add(actions, BorderLayout.NORTH);
         wrapper.add(new JScrollPane(courseTable), BorderLayout.CENTER);
-        return wrapper;
-    }
+        return wrapper; }
+//    private JPanel createCoursesPanel() {
+//        JPanel panel = new JPanel(new BorderLayout());
+//
+//        JLabel title = new JLabel("Manage Courses", SwingConstants.CENTER);
+//        title.setFont(new Font("Arial", Font.BOLD, 18));
+//        panel.add(title, BorderLayout.NORTH);
+//
+//        // Table model
+//        String[] columnNames = {"ID", "Name", "Instructor", "Program", "Edit", "Delete"};
+//        DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
+//            @Override
+//            public boolean isCellEditable(int row, int column) {
+//                return column == 4 || column == 5; // Edit & Delete only
+//            }
+//        };
+//
+//        JTable table = new JTable(model);
+//        table.setRowHeight(30);
+//
+//        // Button renderer/editor for Edit column
+//        table.getColumn("Edit").setCellRenderer(new ButtonRenderer());
+//        table.getColumn("Edit").setCellEditor(new ButtonEditor(new JCheckBox(), (row) -> {
+//            int courseId = (int) model.getValueAt(row, 0);
+//            editCourse(courseId);
+//        }));
+//
+//        // Button renderer/editor for Delete column
+//        table.getColumn("Delete").setCellRenderer(new ButtonRenderer());
+//        table.getColumn("Delete").setCellEditor(new ButtonEditor(new JCheckBox(), (row) -> {
+//            int courseId = (int) model.getValueAt(row, 0);
+//            deleteCourse(courseId);
+//            refreshCourseTable(model);
+//        }));
+//
+//        // Load initial data
+//        refreshCourseTable(model);
+//
+//        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+//
+//        return panel;
+//    }
+
+
 
     private JPanel createStudentsPanel() {
         studentTable = buildTable(new String[]{"ID", "Name", "Email", "Program"});
@@ -277,10 +307,22 @@ public class AdminDashboard extends JFrame {
             }
         };
         JTable table = new JTable(model);
-        table.setRowHeight(24);
+        table.setRowHeight(36); // increased row height
         table.setFillsViewportHeight(true);
+
+        // Bigger font for cells
+        Font cellFont = new Font("Segoe UI", Font.PLAIN, 14);
+        table.setFont(cellFont);
+        table.setGridColor(new Color(230, 230, 230));
+
+        // Header font slightly larger and bold
+        JTableHeader hdr = table.getTableHeader();
+        hdr.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        hdr.setPreferredSize(new Dimension(hdr.getPreferredSize().width, 36));
+
         return table;
     }
+
 
     private void refreshAllData() {
         loadCourses();
@@ -297,14 +339,38 @@ public class AdminDashboard extends JFrame {
             return;
         }
         for (Course course : courses) {
+
+            // Try to fetch instructor name and section count. If your ERPDB doesn't yet
+            // provide these helpers, they must be implemented. For now we try-catch so UI won't crash.
+            String instructorName = "";
+            int sectionsCount = 0;
+
+            try {
+                // These helper methods are expected on erpDb. If absent, they'll throw / return defaults.
+                // I can implement these in ERPDB when you confirm.
+                instructorName = erpDb.getInstructorNameForCourse(course.getId()); // String
+            } catch (Exception ex) {
+                instructorName = ""; // placeholder until backend exists
+            }
+
+            try {
+                sectionsCount = erpDb.getSectionCountForCourse(course.getId()); // int
+            } catch (Exception ex) {
+                sectionsCount = 0; // placeholder until backend exists
+            }
+
             model.addRow(new Object[]{
                     course.getId(),
                     course.getCode(),
                     course.getTitle(),
-                    course.getCredits()
+                    course.getCredits(),
+                    instructorName,
+                    sectionsCount,
+                    "⋯" // placeholder for the show-more button cell
             });
         }
     }
+
 
     private void loadStudents() {
         DefaultTableModel model = (DefaultTableModel) studentTable.getModel();
@@ -397,6 +463,7 @@ public class AdminDashboard extends JFrame {
         String code = codeField.getText().trim();
         String title = titleField.getText().trim();
         int credits = (int) creditsSpinner.getValue();
+
 
         if (code.isEmpty() || title.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Code and title are required.");
@@ -692,6 +759,153 @@ public class AdminDashboard extends JFrame {
             g2.fillRoundRect(0, 0, getWidth(), getHeight(), radius, radius);
             g2.dispose();
             super.paintComponent(g);
+        }
+    }
+    private JPanel createSectionsPanel() {
+        JTable sectionsTable;
+        DefaultTableModel model = new DefaultTableModel(new String[]{"ID", "Course", "Instructor", "Semester/Schedule", "Room", "Capacity", "Students", "Actions"}, 0) {
+            @Override public boolean isCellEditable(int row, int col) { return false; }
+        };
+        sectionsTable = new JTable(model);
+        sectionsTable.setRowHeight(30);
+
+        // Actions column - reuse ButtonRenderer/ButtonEditor approach
+        sectionsTable.getColumnModel().getColumn(7).setCellRenderer(new ButtonRenderer());
+        sectionsTable.getColumnModel().getColumn(7).setCellEditor(new ButtonEditor(new JCheckBox(), (row) -> {
+            int sectionId = (int) model.getValueAt(row, 0);
+            // open small section editor dialog
+            openSectionDetailsDialog(sectionId);
+        }));
+
+        JButton addBtn = createButton("Add Section", new Color(40, 167, 69));
+        addBtn.addActionListener(e -> openSectionCreateDialog());
+
+        JButton refreshBtn = createButton("Refresh", new Color(40, 167, 69));
+        refreshBtn.addActionListener(e -> loadSections(model));
+
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        actions.add(addBtn);
+        actions.add(refreshBtn);
+
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setBorder(new EmptyBorder(10, 10, 10, 10));
+        wrapper.add(actions, BorderLayout.NORTH);
+        wrapper.add(new JScrollPane(sectionsTable), BorderLayout.CENTER);
+
+        // initial load
+        loadSections(model);
+
+        return wrapper;
+    }
+    private void loadSections(DefaultTableModel model) {
+        model.setRowCount(0);
+        java.util.List<Section> secs = erpDb.getAllSections();
+        if (secs == null) return;
+        for (Section s : secs) {
+            String courseCode = "";
+            try {
+                Course c = erpDb.getCourseById(s.getCourseId());
+                courseCode = c != null ? c.getCode() : "";
+            } catch (Exception ex) {}
+
+            String instrName = "";
+            try {
+                Instructor instr = erpDb.getInstructorById(s.getInstructorId());
+                instrName = instr != null ? instr.getName() : "";
+            } catch (Exception ex) {}
+
+            int studentCount = erpDb.getStudentCountForSection(s.getId());
+
+            model.addRow(new Object[]{
+                    s.getId(),
+                    courseCode,
+                    instrName,
+                    s.getSchedule(),
+                    s.getRoom(),
+                    s.getCapacity(),
+                    studentCount,
+                    "⋯"
+            });
+        }
+    }
+
+    private void openSectionCreateDialog() {
+        // small dialog to create section
+        JTextField courseIdField = new JTextField();
+        JTextField scheduleField = new JTextField();
+        JTextField roomField = new JTextField();
+        JSpinner capacitySpinner = new JSpinner(new SpinnerNumberModel(30, 1, 500, 1));
+        JPanel p = new JPanel(new GridLayout(0, 2, 8, 8));
+        p.add(new JLabel("Course ID:")); p.add(courseIdField);
+        p.add(new JLabel("Schedule:")); p.add(scheduleField);
+        p.add(new JLabel("Room:")); p.add(roomField);
+        p.add(new JLabel("Capacity:")); p.add(capacitySpinner);
+
+        int res = JOptionPane.showConfirmDialog(this, p, "Create Section", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (res == JOptionPane.OK_OPTION) {
+            try {
+                int courseId = Integer.parseInt(courseIdField.getText().trim());
+                String schedule = scheduleField.getText().trim();
+                String room = roomField.getText().trim();
+                int capacity = (int) capacitySpinner.getValue();
+                boolean ok = erpDb.addSection(courseId, null, schedule, room, capacity);
+                if (!ok) JOptionPane.showMessageDialog(this, "Unable to create section.", "Error", JOptionPane.ERROR_MESSAGE);
+                else {
+                    JOptionPane.showMessageDialog(this, "Section created.");
+                    refreshAllData();
+                }
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Course ID must be a number.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void openSectionDetailsDialog(int sectionId) {
+        Section s = erpDb.getSectionById(sectionId);
+        if (s == null) { JOptionPane.showMessageDialog(this, "Section not found."); return; }
+
+        JTextField scheduleField = new JTextField(s.getSchedule());
+        JTextField roomField = new JTextField(s.getRoom());
+        JSpinner capacitySpinner = new JSpinner(new SpinnerNumberModel(s.getCapacity(), 1, 500, 1));
+
+        // instructor dropdown
+        java.util.List<Instructor> instructors = erpDb.getAllInstructors();
+        String[] instrOptions = new String[instructors.size() + 1];
+        instrOptions[0] = "Unassigned";
+        for (int i = 0; i < instructors.size(); i++) {
+            instrOptions[i+1] = instructors.get(i).getName() + " <" + instructors.get(i).getEmail() + ">";
+        }
+        JComboBox<String> instrCombo = new JComboBox<>(instrOptions);
+        // try to select current instructor
+        try {
+            if (s.getInstructorId() > 0) {
+                Instructor cur = erpDb.getInstructorById(s.getInstructorId());
+                for (int i = 0; i < instructors.size(); i++) {
+                    if (instructors.get(i).getId() == s.getInstructorId()) {
+                        instrCombo.setSelectedIndex(i+1);
+                        break;
+                    }
+                }
+            }
+        } catch (Exception ex) {}
+
+        JPanel p = new JPanel(new GridLayout(0, 2, 8, 8));
+        p.add(new JLabel("Schedule:")); p.add(scheduleField);
+        p.add(new JLabel("Room:")); p.add(roomField);
+        p.add(new JLabel("Capacity:")); p.add(capacitySpinner);
+        p.add(new JLabel("Instructor:")); p.add(instrCombo);
+
+        int res = JOptionPane.showConfirmDialog(this, p, "Edit Section", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (res == JOptionPane.OK_OPTION) {
+            int instrId = -1;
+            int sel = instrCombo.getSelectedIndex();
+            if (sel > 0) instrId = instructors.get(sel-1).getId();
+            boolean ok = erpDb.updateSection(s.getId(), instrId > 0 ? instrId : null, scheduleField.getText().trim(), roomField.getText().trim(), (int) capacitySpinner.getValue());
+            if (!ok) JOptionPane.showMessageDialog(this, "Unable to update section.", "Error", JOptionPane.ERROR_MESSAGE);
+            else {
+                JOptionPane.showMessageDialog(this, "Section updated.");
+                refreshAllData();
+            }
         }
     }
 

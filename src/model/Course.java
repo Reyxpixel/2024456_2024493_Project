@@ -13,8 +13,8 @@ public class Course {
         this.credits = credits;
     }
 
-    public int getId() { return id; }
-    public String getCode() { return code; }
-    public String getTitle() { return title; }
-    public int getCredits() { return credits; }
+    public int getId(){return id;}
+    public String getCode(){return code;}
+    public String getTitle(){return title;}
+    public int getCredits(){return credits;}
 }
