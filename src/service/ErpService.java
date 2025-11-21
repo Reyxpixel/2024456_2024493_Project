@@ -3,8 +3,6 @@ package service;
 import db.erpDB;
 import model.*;
 
-import java.sql.ResultSet;
-
 public class ErpService {
     private final erpDB db;
 
@@ -12,48 +10,23 @@ public class ErpService {
         this.db = new erpDB();
     }
     public static Student getStudentByEmail(String email) {
-        try {
-            ResultSet rs = erpDB.getStudentByEmail(email);
-            if (rs.next()) {
-                return new Student(
-                        rs.getInt("student_id"),
-                        rs.getString("name"),
-                        rs.getString("email"),
-                        rs.getString("program")
-                );
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+        return erpDB.getStudentByEmailStatic(email);
     }
+    
     public static Instructor getInstructorByEmail(String email) {
-        try {
-            ResultSet rs = erpDB.getInstructorByEmail(email);
-            if (rs.next()) {
-                return new Instructor(
-                        rs.getInt("instructor_id"),
-                        rs.getString("name"),
-                        rs.getString("email"),
-                        rs.getString("department")
-                );
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+        return erpDB.getInstructorByEmailStatic(email);
     }
     // Sections
     public java.util.List<Section> getSectionsByCourse(int courseId) {
         return db.getSectionsByCourse(courseId);
     }
 
-    public boolean addSection(int courseId, Integer instructorId, String schedule, String room, int capacity) {
-        return db.addSection(courseId, instructorId, schedule, room, capacity);
+    public boolean addSection(int courseId, Integer instructorId, String name, int capacity, String room, String timetable) {
+        return db.addSection(courseId, instructorId, name, capacity, room, timetable);
     }
 
-    public boolean updateSection(int id, Integer instructorId, String schedule, String room, int capacity) {
-        return db.updateSection(id, instructorId, schedule, room, capacity);
+    public boolean updateSection(int id, int courseId, Integer instructorId, String name, int capacity, String room, String timetable) {
+        return db.updateSection(id, courseId, instructorId, name, capacity, room, timetable);
     }
 
     public boolean deleteSection(int id) {
@@ -61,7 +34,7 @@ public class ErpService {
     }
 
     public int getStudentCountForSection(int sectionId) {
-        return db.getStudentCountForSection(sectionId);
+        return db.getEnrollmentCountForSection(sectionId);
     }
 
 }
