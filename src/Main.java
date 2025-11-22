@@ -13,7 +13,7 @@ public class Main {
 
         // Note: If you encounter database schema errors, delete the data/erp.db file
         // and let it recreate with the new schema
-        erpDB erpDb = new erpDB(); // creates ERP DB tables and migrates if needed
+        erpDB erpDb = new erpDB();
 
         // Register students with corresponding profiles (only if not already registered)
         if (AuthService.register("stu1", "stupass", "student")) {

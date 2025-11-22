@@ -26,7 +26,7 @@ public class LoginScreen extends JFrame {
 
     public LoginScreen() {
         setTitle("IIITD ERP Portal - Login");
-        setSize(600, 750);
+        setSize(1000, 750);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 

@@ -3,6 +3,7 @@ package ui;
 import db.erpDB;
 import model.*;
 import service.AuthService;
+import util.ThemeManager;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -52,6 +53,7 @@ public class AdminDashboard extends JFrame {
     private RoundedToggleButton maintenanceToggle;
     private boolean updatingMaintenanceToggle = false;
     private Image headerBackgroundImage;
+    private RoundedToggleButton darkModeToggle;
 
     private CardLayout contentLayout;
     private JPanel contentPanel;
@@ -60,9 +62,11 @@ public class AdminDashboard extends JFrame {
     public AdminDashboard(User user) {
         this.user = user;
         this.erpDb = new erpDB();
+        ThemeManager.loadDarkModePreference();
         loadHeaderBackground();
         initUI();
         refreshAllData();
+        applyTheme();
     }
 
     private void loadHeaderBackground() {
@@ -86,7 +90,7 @@ public class AdminDashboard extends JFrame {
         setLocationRelativeTo(null);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLayout(new BorderLayout());
-        getContentPane().setBackground(BG_LIGHT);
+        getContentPane().setBackground(ThemeManager.getBackgroundColor());
 
         JPanel northWrapper = new JPanel(new BorderLayout());
         northWrapper.setOpaque(false);
@@ -178,6 +182,17 @@ public class AdminDashboard extends JFrame {
         maintenancePanel.add(maintenanceToggle);
         maintenancePanel.add(Box.createHorizontalGlue());
 
+        // Dark mode toggle
+        ThemeManager.loadDarkModePreference();
+        darkModeToggle = new RoundedToggleButton();
+        darkModeToggle.setText(ThemeManager.isDarkMode() ? "🌙 Dark" : "☀️ Light");
+        darkModeToggle.setSelected(ThemeManager.isDarkMode());
+        darkModeToggle.addActionListener(e -> {
+            ThemeManager.setDarkMode(darkModeToggle.isSelected());
+            darkModeToggle.setText(ThemeManager.isDarkMode() ? "🌙 Dark" : "☀️ Light");
+            applyTheme();
+        });
+
         JButton changePasswordBtn = createButton("Change Password");
         changePasswordBtn.addActionListener(e -> openChangePasswordDialog());
 
@@ -191,6 +206,8 @@ public class AdminDashboard extends JFrame {
         actions.setOpaque(false);
         actions.setLayout(new BoxLayout(actions, BoxLayout.X_AXIS));
         actions.add(Box.createHorizontalGlue());
+        actions.add(darkModeToggle);
+        actions.add(Box.createHorizontalStrut(10));
         actions.add(changePasswordBtn);
         actions.add(Box.createHorizontalStrut(10));
         actions.add(logoutBtn);
@@ -205,7 +222,7 @@ public class AdminDashboard extends JFrame {
 
     private JPanel createNavigationBar() {
         JPanel nav = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 14));
-        nav.setBackground(Color.WHITE);
+        nav.setBackground(ThemeManager.getNavBackgroundColor());
         nav.setBorder(new EmptyBorder(0, 25, 0, 25));
         navButtons.clear();
         for (String key : NAV_ITEMS) {
@@ -222,9 +239,76 @@ public class AdminDashboard extends JFrame {
         navButtons.forEach((name, button) -> button.setSelected(name.equals(key)));
     }
 
+    private void applyTheme() {
+        getContentPane().setBackground(ThemeManager.getBackgroundColor());
+        
+        // Update navigation bar
+        Component[] navComponents = getContentPane().getComponents();
+        for (Component comp : navComponents) {
+            if (comp instanceof JPanel) {
+                Component[] subComponents = ((JPanel) comp).getComponents();
+                for (Component subComp : subComponents) {
+                    if (subComp instanceof JPanel) {
+                        JPanel navPanel = (JPanel) subComp;
+                        if (navPanel.getComponentCount() > 0 && navPanel.getComponent(0) instanceof JPanel) {
+                            navPanel.setBackground(ThemeManager.getNavBackgroundColor());
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Update all panels recursively
+        updatePanelTheme(contentPanel);
+        
+        // Update tables
+        updateTableTheme(courseTable);
+        updateTableTheme(studentTable);
+        updateTableTheme(instructorTable);
+        updateTableTheme(sectionsTable);
+        
+        repaint();
+        revalidate();
+    }
+
+    private void updatePanelTheme(Container container) {
+        for (Component comp : container.getComponents()) {
+            if (comp instanceof JPanel) {
+                JPanel panel = (JPanel) comp;
+                // Check if it's a RoundedPanel (content panel)
+                if (panel.getBackground().equals(new Color(240, 242, 245)) || 
+                    panel.getBackground().equals(new Color(30, 30, 30))) {
+                    panel.setBackground(ThemeManager.getBackgroundColor());
+                } else if (panel.getBackground().equals(Color.WHITE) || 
+                           panel.getBackground().equals(new Color(45, 45, 45))) {
+                    panel.setBackground(ThemeManager.getPanelColor());
+                } else if (panel.getBackground().equals(new Color(235, 238, 243)) || 
+                           panel.getBackground().equals(new Color(60, 60, 60))) {
+                    // Button panel
+                    panel.setBackground(ThemeManager.getButtonDefaultColor());
+                }
+                updatePanelTheme(panel);
+            } else if (comp instanceof Container) {
+                updatePanelTheme((Container) comp);
+            }
+        }
+    }
+
+    private void updateTableTheme(JTable table) {
+        if (table == null) return;
+        table.setBackground(ThemeManager.getTableBackgroundColor());
+        table.setForeground(ThemeManager.getTextColor());
+        table.setGridColor(ThemeManager.getBorderColor());
+        JTableHeader header = table.getTableHeader();
+        if (header != null) {
+            header.setBackground(ThemeManager.getTableHeaderColor());
+            header.setForeground(ThemeManager.getTextColor());
+        }
+    }
+
     private JPanel createHomePanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(BG_LIGHT);
+        panel.setBackground(ThemeManager.getBackgroundColor());
         panel.setBorder(new EmptyBorder(30, 30, 30, 30));
 
         JPanel stats = new JPanel(new GridLayout(1, 3, 20, 0));
@@ -547,7 +631,7 @@ public class AdminDashboard extends JFrame {
 
     private JPanel createStatisticsPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(BG_LIGHT);
+        panel.setBackground(ThemeManager.getBackgroundColor());
         panel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
         JPanel content = new JPanel(new GridLayout(2, 2, 20, 20));
@@ -563,7 +647,7 @@ public class AdminDashboard extends JFrame {
     }
 
     private JPanel createCourseEnrollmentStats() {
-        RoundedPanel card = new RoundedPanel(28, Color.WHITE);
+        RoundedPanel card = new RoundedPanel(28, ThemeManager.getPanelColor());
         card.setLayout(new BorderLayout());
         card.setBorder(new EmptyBorder(20, 20, 20, 20));
 
@@ -581,7 +665,7 @@ public class AdminDashboard extends JFrame {
     }
 
     private JPanel createInstructorLoadStats() {
-        RoundedPanel card = new RoundedPanel(28, Color.WHITE);
+        RoundedPanel card = new RoundedPanel(28, ThemeManager.getPanelColor());
         card.setLayout(new BorderLayout());
         card.setBorder(new EmptyBorder(20, 20, 20, 20));
 
@@ -599,7 +683,7 @@ public class AdminDashboard extends JFrame {
     }
 
     private JPanel createSectionCapacityStats() {
-        RoundedPanel card = new RoundedPanel(28, Color.WHITE);
+        RoundedPanel card = new RoundedPanel(28, ThemeManager.getPanelColor());
         card.setLayout(new BorderLayout());
         card.setBorder(new EmptyBorder(20, 20, 20, 20));
 
@@ -617,7 +701,7 @@ public class AdminDashboard extends JFrame {
     }
 
     private JPanel createOverallStats() {
-        RoundedPanel card = new RoundedPanel(28, Color.WHITE);
+        RoundedPanel card = new RoundedPanel(28, ThemeManager.getPanelColor());
         card.setLayout(new BorderLayout());
         card.setBorder(new EmptyBorder(20, 20, 20, 20));
 
@@ -716,10 +800,10 @@ public class AdminDashboard extends JFrame {
 
     private JPanel buildModulePanel(JPanel actions, JTable table) {
         JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.setBackground(BG_LIGHT);
+        wrapper.setBackground(ThemeManager.getBackgroundColor());
         wrapper.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        RoundedPanel card = new RoundedPanel(28, Color.WHITE);
+        RoundedPanel card = new RoundedPanel(28, ThemeManager.getPanelColor());
         card.setLayout(new BorderLayout(0, 12));
         card.setBorder(new EmptyBorder(20, 20, 20, 20));
         card.add(actions, BorderLayout.NORTH);
@@ -732,7 +816,7 @@ public class AdminDashboard extends JFrame {
     }
 
     private JPanel createStatCard(String label, JLabel valueLabel, String targetCard) {
-        RoundedPanel card = new RoundedPanel(28, Color.WHITE);
+        RoundedPanel card = new RoundedPanel(28, ThemeManager.getPanelColor());
         card.setLayout(new BorderLayout());
         card.setBorder(new EmptyBorder(18, 22, 18, 22));
 
@@ -797,17 +881,17 @@ public class AdminDashboard extends JFrame {
         table.setIntercellSpacing(new Dimension(0, 0));
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setDefaultRenderer(Object.class, new SimpleTableCellRenderer());
-        table.setBackground(Color.WHITE);
+        table.setBackground(ThemeManager.getTableBackgroundColor());
         table.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        table.setSelectionBackground(new Color(66, 176, 172));
+        table.setSelectionBackground(ThemeManager.getAccentColor());
         table.setSelectionForeground(Color.WHITE);
         JTableHeader header = table.getTableHeader();
         header.setPreferredSize(new Dimension(header.getPreferredSize().width, 42));
-        header.setBackground(new Color(245, 245, 245));
-        header.setForeground(new Color(60, 60, 60));
+        header.setBackground(ThemeManager.getTableHeaderColor());
+        header.setForeground(ThemeManager.getTextColor());
         header.setFont(new Font("Segoe UI", Font.BOLD, 13));
         header.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 2, 0, new Color(220, 220, 220)),
+                BorderFactory.createMatteBorder(0, 0, 2, 0, ThemeManager.getBorderColor()),
                 new EmptyBorder(10, 12, 10, 12)
         ));
         header.setDefaultRenderer(new HeaderRenderer());
@@ -2143,8 +2227,8 @@ public class AdminDashboard extends JFrame {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            component.setBackground(isSelected ? table.getSelectionBackground() : Color.WHITE);
-            component.setForeground(isSelected ? table.getSelectionForeground() : new Color(50, 50, 50));
+            component.setBackground(isSelected ? table.getSelectionBackground() : ThemeManager.getTableBackgroundColor());
+            component.setForeground(isSelected ? table.getSelectionForeground() : ThemeManager.getTextColor());
             if (component instanceof JComponent jComponent) {
                 jComponent.setBorder(new EmptyBorder(10, 12, 10, 12));
             }

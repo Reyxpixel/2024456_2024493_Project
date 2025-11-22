@@ -4,6 +4,7 @@ import db.erpDB;
 import model.*;
 import service.AuthService;
 import service.ErpService;
+import util.ThemeManager;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -45,6 +46,7 @@ public class StudentDashboard extends JFrame {
     private JTable registrationsTable;
     private JTable timetableTable;
     private JTable gradesTable;
+    private RoundedToggleButton darkModeToggle;
 
     private CardLayout contentLayout;
     private JPanel contentPanel;
@@ -83,9 +85,11 @@ public class StudentDashboard extends JFrame {
             return;
         }
 
+        ThemeManager.loadDarkModePreference();
         loadHeaderBackground();
         initUI();
         refreshAllData();
+        applyTheme();
     }
 
     private void loadHeaderBackground() {
@@ -109,7 +113,7 @@ public class StudentDashboard extends JFrame {
         setLocationRelativeTo(null);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLayout(new BorderLayout());
-        getContentPane().setBackground(BG_LIGHT);
+        getContentPane().setBackground(ThemeManager.getBackgroundColor());
 
         JPanel northWrapper = new JPanel(new BorderLayout());
         northWrapper.setOpaque(false);
@@ -120,7 +124,13 @@ public class StudentDashboard extends JFrame {
         contentLayout = new CardLayout();
         contentPanel = new JPanel(contentLayout);
         contentPanel.setOpaque(false);
-        contentPanel.add(createHomePanel(), "Home");
+        JPanel homePanel = createHomePanel();
+        contentPanel.add(homePanel, "Home");
+        // Store reference for average SGPA label
+        avgSGPALabel = (JLabel) homePanel.getClientProperty("avgSGPALabel");
+        if (avgSGPALabel != null) {
+            contentPanel.putClientProperty("avgSGPALabel", avgSGPALabel);
+        }
         contentPanel.add(createCatalogPanel(), "Course Catalog");
         contentPanel.add(createRegistrationsPanel(), "My Registrations");
         contentPanel.add(createTimetablePanel(), "Timetable");
@@ -179,6 +189,16 @@ public class StudentDashboard extends JFrame {
         titlePanel.add(subtitle);
         titlePanel.add(Box.createVerticalGlue());
 
+        // Dark mode toggle
+        darkModeToggle = new RoundedToggleButton();
+        darkModeToggle.setText(ThemeManager.isDarkMode() ? "🌙 Dark" : "☀️ Light");
+        darkModeToggle.setSelected(ThemeManager.isDarkMode());
+        darkModeToggle.addActionListener(e -> {
+            ThemeManager.setDarkMode(darkModeToggle.isSelected());
+            darkModeToggle.setText(ThemeManager.isDarkMode() ? "🌙 Dark" : "☀️ Light");
+            applyTheme();
+        });
+
         JButton changePasswordBtn = createButton("Change Password");
         changePasswordBtn.addActionListener(e -> openChangePasswordDialog());
 
@@ -192,6 +212,8 @@ public class StudentDashboard extends JFrame {
         actions.setOpaque(false);
         actions.setLayout(new BoxLayout(actions, BoxLayout.X_AXIS));
         actions.add(Box.createHorizontalGlue());
+        actions.add(darkModeToggle);
+        actions.add(Box.createHorizontalStrut(10));
         actions.add(changePasswordBtn);
         actions.add(Box.createHorizontalStrut(10));
         actions.add(logoutBtn);
@@ -205,7 +227,7 @@ public class StudentDashboard extends JFrame {
 
     private JPanel createNavigationBar() {
         JPanel nav = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 14));
-        nav.setBackground(Color.WHITE);
+        nav.setBackground(ThemeManager.getNavBackgroundColor());
         nav.setBorder(new EmptyBorder(0, 25, 0, 25));
         navButtons.clear();
         for (String key : NAV_ITEMS) {
@@ -225,26 +247,72 @@ public class StudentDashboard extends JFrame {
         }
     }
 
+    private void applyTheme() {
+        getContentPane().setBackground(ThemeManager.getBackgroundColor());
+        updatePanelTheme(contentPanel);
+        updateTableTheme(catalogTable);
+        updateTableTheme(registrationsTable);
+        updateTableTheme(timetableTable);
+        updateTableTheme(gradesTable);
+        repaint();
+        revalidate();
+    }
+
+    private void updatePanelTheme(Container container) {
+        for (Component comp : container.getComponents()) {
+            if (comp instanceof JPanel) {
+                JPanel panel = (JPanel) comp;
+                if (panel.getBackground().equals(new Color(240, 242, 245)) || 
+                    panel.getBackground().equals(new Color(30, 30, 30))) {
+                    panel.setBackground(ThemeManager.getBackgroundColor());
+                } else if (panel.getBackground().equals(Color.WHITE) || 
+                           panel.getBackground().equals(new Color(45, 45, 45))) {
+                    panel.setBackground(ThemeManager.getPanelColor());
+                }
+                updatePanelTheme(panel);
+            } else if (comp instanceof Container) {
+                updatePanelTheme((Container) comp);
+            }
+        }
+    }
+
+    private void updateTableTheme(JTable table) {
+        if (table == null) return;
+        table.setBackground(ThemeManager.getTableBackgroundColor());
+        table.setForeground(ThemeManager.getTextColor());
+        table.setGridColor(ThemeManager.getBorderColor());
+        JTableHeader header = table.getTableHeader();
+        if (header != null) {
+            header.setBackground(ThemeManager.getTableHeaderColor());
+            header.setForeground(ThemeManager.getTextColor());
+        }
+    }
+
     private JPanel createHomePanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(BG_LIGHT);
+        panel.setBackground(ThemeManager.getBackgroundColor());
         panel.setBorder(new EmptyBorder(30, 30, 30, 30));
 
-        JPanel stats = new JPanel(new GridLayout(1, 2, 20, 0));
+        JPanel stats = new JPanel(new GridLayout(1, 3, 20, 0));
         stats.setOpaque(false);
 
         coursesCountLabel = new JLabel("-");
         creditsCountLabel = new JLabel("-");
+        JLabel avgSGPALabel = new JLabel("-");
 
         stats.add(createStatCard("Registered Courses", coursesCountLabel));
         stats.add(createStatCard("Total Credits", creditsCountLabel));
+        stats.add(createStatCard("Average SGPA", avgSGPALabel));
+
+        // Store label reference for updates
+        panel.putClientProperty("avgSGPALabel", avgSGPALabel);
 
         panel.add(stats, BorderLayout.NORTH);
         return panel;
     }
 
     private JPanel createStatCard(String label, JLabel valueLabel) {
-        RoundedPanel card = new RoundedPanel(28, Color.WHITE);
+        RoundedPanel card = new RoundedPanel(28, ThemeManager.getPanelColor());
         card.setLayout(new BorderLayout());
         card.setBorder(new EmptyBorder(18, 22, 18, 22));
 
@@ -322,10 +390,12 @@ public class StudentDashboard extends JFrame {
     }
 
     private JPanel createGradesPanel() {
-        DefaultTableModel model = new DefaultTableModel(new String[]{"Course Code", "Title", "Credits", "Section", "Grade", "Final Grade"}, 0);
+        DefaultTableModel model = new DefaultTableModel(new String[]{"Course Code", "Title", "Credits", "Section", "SGPA", "Letter Grade"}, 0);
         gradesTable = new JTable(model);
         styleTable(gradesTable);
         gradesTable.setRowHeight(34);
+        // Custom renderer to highlight average row
+        gradesTable.setDefaultRenderer(Object.class, new GradesTableCellRenderer());
 
         JButton downloadCSVBtn = createButton("Download CSV", PANEL_ACCENT, Color.WHITE);
         downloadCSVBtn.addActionListener(e -> downloadTranscriptCSV());
@@ -523,6 +593,9 @@ public class StudentDashboard extends JFrame {
         model.setRowCount(0);
         List<Enrollment> enrollments = erpDb.getEnrollmentsByStudent(student.getId());
 
+        float totalSGPA = 0;
+        int coursesWithGrades = 0;
+
         for (Enrollment enrollment : enrollments) {
             Section section = erpDb.getSectionById(enrollment.getSectionId());
             if (section == null) continue;
@@ -532,25 +605,66 @@ public class StudentDashboard extends JFrame {
                     ? erpDb.getGradeById(enrollment.getGradeId())
                     : null;
 
-            String gradeText = grade != null ? grade.getGrade() : "-";
-            String finalGrade = gradeText; // For now, using the same grade as final
+            String sgpaText = "-";
+            String letterGrade = "-";
+            if (grade != null && grade.getSGPA() != null) {
+                Float sgpa = grade.getSGPA();
+                sgpaText = String.format("%.2f", sgpa);
+                letterGrade = grade.getLetterGrade();
+                totalSGPA += sgpa;
+                coursesWithGrades++;
+            }
 
             model.addRow(new Object[]{
                     course != null ? course.getCode() : "?",
                     course != null ? course.getTitle() : "?",
                     course != null ? course.getCredits() : 0,
                     section.getName(),
-                    gradeText,
-                    finalGrade
+                    sgpaText,
+                    letterGrade
             });
         }
+
+        // Add average SGPA row
+        if (coursesWithGrades > 0) {
+            float avgSGPA = totalSGPA / coursesWithGrades;
+            String avgSGPAText = String.format("%.2f", avgSGPA);
+            String avgLetterGrade = Grade.calculateLetterGrade(avgSGPA);
+            model.addRow(new Object[]{
+                    "AVERAGE",
+                    "",
+                    "",
+                    "",
+                    avgSGPAText,
+                    avgLetterGrade
+            });
+            // Mark the last row as average row
+            gradesTable.putClientProperty("averageRowIndex", model.getRowCount() - 1);
+        } else {
+            gradesTable.putClientProperty("averageRowIndex", -1);
+        }
     }
+
+    private JLabel avgSGPALabel; // Store reference to average SGPA label
 
     private void refreshHomeStats() {
         int courseCount = erpDb.getRegisteredCourseCount(student.getId());
         int totalCredits = erpDb.getTotalCreditsForStudent(student.getId());
         coursesCountLabel.setText(String.valueOf(courseCount));
         creditsCountLabel.setText(String.valueOf(totalCredits));
+        
+        // Update average SGPA
+        Float avgSGPA = erpDb.getAverageSGPAForStudent(student.getId());
+        if (avgSGPALabel == null) {
+            avgSGPALabel = (JLabel) contentPanel.getClientProperty("avgSGPALabel");
+        }
+        if (avgSGPALabel != null) {
+            if (avgSGPA != null) {
+                avgSGPALabel.setText(String.format("%.2f", avgSGPA));
+            } else {
+                avgSGPALabel.setText("-");
+            }
+        }
     }
 
     private void refreshAllData() {
@@ -574,7 +688,7 @@ public class StudentDashboard extends JFrame {
         if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
             File file = fileChooser.getSelectedFile();
             try (FileWriter writer = new FileWriter(file)) {
-                writer.write("Course Code,Title,Credits,Section,Grade,Final Grade\n");
+                writer.write("Course Code,Title,Credits,Section,SGPA,Letter Grade\n");
 
                 List<Enrollment> enrollments = erpDb.getEnrollmentsByStudent(student.getId());
                 for (Enrollment enrollment : enrollments) {
@@ -586,14 +700,30 @@ public class StudentDashboard extends JFrame {
                             ? erpDb.getGradeById(enrollment.getGradeId())
                             : null;
 
-                    String gradeText = grade != null ? grade.getGrade() : "-";
+                    String sgpaText = "-";
+                    String letterGrade = "-";
+                    if (grade != null && grade.getSGPA() != null) {
+                        sgpaText = String.format("%.2f", grade.getSGPA());
+                        letterGrade = grade.getLetterGrade();
+                    }
+                    
                     writer.write(String.format("%s,%s,%d,%s,%s,%s\n",
                             course != null ? course.getCode() : "?",
                             course != null ? course.getTitle() : "?",
                             course != null ? course.getCredits() : 0,
                             section.getName(),
-                            gradeText,
-                            gradeText
+                            sgpaText,
+                            letterGrade
+                    ));
+                }
+                
+                // Add average SGPA
+                Float avgSGPA = erpDb.getAverageSGPAForStudent(student.getId());
+                if (avgSGPA != null) {
+                    String avgSGPAText = String.format("%.2f", avgSGPA);
+                    String avgLetterGrade = Grade.calculateLetterGrade(avgSGPA);
+                    writer.write(String.format("%s,%s,%s,%s,%s,%s\n",
+                            "AVERAGE", "", "", "", avgSGPAText, avgLetterGrade
                     ));
                 }
 
@@ -644,10 +774,10 @@ public class StudentDashboard extends JFrame {
 
     private JPanel buildModulePanel(JPanel actions, JTable table) {
         JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.setBackground(BG_LIGHT);
+        wrapper.setBackground(ThemeManager.getBackgroundColor());
         wrapper.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        RoundedPanel card = new RoundedPanel(28, Color.WHITE);
+        RoundedPanel card = new RoundedPanel(28, ThemeManager.getPanelColor());
         card.setLayout(new BorderLayout(0, 12));
         card.setBorder(new EmptyBorder(20, 20, 20, 20));
         card.add(actions, BorderLayout.NORTH);
@@ -677,17 +807,17 @@ public class StudentDashboard extends JFrame {
         table.setIntercellSpacing(new Dimension(0, 0));
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setDefaultRenderer(Object.class, new SimpleTableCellRenderer());
-        table.setBackground(Color.WHITE);
+        table.setBackground(ThemeManager.getTableBackgroundColor());
         table.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        table.setSelectionBackground(new Color(66, 176, 172));
+        table.setSelectionBackground(ThemeManager.getAccentColor());
         table.setSelectionForeground(Color.WHITE);
         JTableHeader header = table.getTableHeader();
         header.setPreferredSize(new Dimension(header.getPreferredSize().width, 42));
-        header.setBackground(new Color(245, 245, 245));
-        header.setForeground(new Color(60, 60, 60));
+        header.setBackground(ThemeManager.getTableHeaderColor());
+        header.setForeground(ThemeManager.getTextColor());
         header.setFont(new Font("Segoe UI", Font.BOLD, 13));
         header.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 2, 0, new Color(220, 220, 220)),
+                BorderFactory.createMatteBorder(0, 0, 2, 0, ThemeManager.getBorderColor()),
                 new EmptyBorder(10, 12, 10, 12)
         ));
     }
@@ -923,6 +1053,36 @@ public class StudentDashboard extends JFrame {
         }
     }
 
+    private static class RoundedToggleButton extends JToggleButton {
+        private final int radius = 28;
+
+        RoundedToggleButton() {
+            super();
+            setFocusPainted(false);
+            setBorderPainted(false);
+            setContentAreaFilled(false);
+            setOpaque(false);
+            setFont(new Font("Segoe UI", Font.BOLD, 14));
+            setForeground(Color.WHITE);
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            setMargin(new Insets(12, 20, 12, 20));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            Color base = isSelected() ? new Color(66, 176, 172) : new Color(100, 100, 100);
+            if (getModel().isRollover()) {
+                base = base.brighter();
+            }
+            g2.setColor(base);
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), radius, radius);
+            g2.dispose();
+            super.paintComponent(g);
+        }
+    }
+
     private static class RoundedTextField extends JTextField {
         private final int radius = 24;
 
@@ -1046,8 +1206,8 @@ public class StudentDashboard extends JFrame {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            component.setBackground(isSelected ? table.getSelectionBackground() : Color.WHITE);
-            component.setForeground(isSelected ? table.getSelectionForeground() : new Color(50, 50, 50));
+            component.setBackground(isSelected ? table.getSelectionBackground() : ThemeManager.getTableBackgroundColor());
+            component.setForeground(isSelected ? table.getSelectionForeground() : ThemeManager.getTextColor());
             if (component instanceof JComponent jComponent) {
                 jComponent.setBorder(new EmptyBorder(10, 12, 10, 12));
             }
@@ -1057,6 +1217,49 @@ public class StudentDashboard extends JFrame {
                 label.setHorizontalAlignment(SwingConstants.RIGHT);
             } else {
                 label.setHorizontalAlignment(SwingConstants.LEFT);
+            }
+            return component;
+        }
+    }
+
+    private static class GradesTableCellRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            
+            // Check if this is the average row
+            Integer avgRowIndex = (Integer) table.getClientProperty("averageRowIndex");
+            boolean isAverageRow = avgRowIndex != null && avgRowIndex == row;
+            
+            if (isAverageRow) {
+                // Highlight average row with different background color
+                Color avgBg = ThemeManager.isDarkMode() ? new Color(50, 60, 80) : new Color(240, 248, 255);
+                component.setBackground(avgBg);
+                component.setForeground(ThemeManager.getTextColor());
+                if (component instanceof JComponent jComponent) {
+                    jComponent.setBorder(new EmptyBorder(10, 12, 10, 12));
+                }
+                JLabel label = (JLabel) component;
+                label.setFont(new Font("Segoe UI", Font.BOLD, 13));
+                String columnName = table.getColumnName(column);
+                if (columnName.equals("Credits") || columnName.equals("SGPA")) {
+                    label.setHorizontalAlignment(SwingConstants.RIGHT);
+                } else {
+                    label.setHorizontalAlignment(SwingConstants.LEFT);
+                }
+            } else {
+                component.setBackground(isSelected ? table.getSelectionBackground() : Color.WHITE);
+                component.setForeground(isSelected ? table.getSelectionForeground() : new Color(50, 50, 50));
+                if (component instanceof JComponent jComponent) {
+                    jComponent.setBorder(new EmptyBorder(10, 12, 10, 12));
+                }
+                JLabel label = (JLabel) component;
+                String columnName = table.getColumnName(column);
+                if (columnName.equals("Credits") || columnName.equals("SGPA")) {
+                    label.setHorizontalAlignment(SwingConstants.RIGHT);
+                } else {
+                    label.setHorizontalAlignment(SwingConstants.LEFT);
+                }
             }
             return component;
         }

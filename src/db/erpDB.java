@@ -1163,4 +1163,114 @@ public class erpDB {
         }
         return 0;
     }
+
+    // Get sections assigned to an instructor
+    public List<Section> getSectionsByInstructor(int instructorId) {
+        List<Section> list = new ArrayList<>();
+        String sql = "SELECT * FROM sections WHERE instructor_id = ? ORDER BY course_id, name";
+        try (Connection conn = connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, instructorId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapSection(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    // Get enrollments for a section
+    public List<Enrollment> getEnrollmentsBySection(int sectionId) {
+        List<Enrollment> list = new ArrayList<>();
+        String sql = "SELECT id, student_id, section_id, grade_id FROM enrollments WHERE section_id = ?";
+        try (Connection conn = connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, sectionId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    list.add(new Enrollment(
+                            rs.getInt("id"),
+                            rs.getInt("student_id"),
+                            rs.getInt("section_id"),
+                            (Integer) rs.getObject("grade_id")
+                    ));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    // Create or update grade for an enrollment
+    public int createOrUpdateGrade(int enrollmentId, float sgpa) {
+        // First check if grade exists
+        String checkSql = "SELECT grade_id FROM grades WHERE enroll_id = ?";
+        try (Connection conn = connect();
+             PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+            checkStmt.setInt(1, enrollmentId);
+            try (ResultSet rs = checkStmt.executeQuery()) {
+                if (rs.next()) {
+                    // Update existing grade
+                    int gradeId = rs.getInt("grade_id");
+                    String updateSql = "UPDATE grades SET grade = ? WHERE grade_id = ?";
+                    try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
+                        updateStmt.setString(1, String.valueOf(sgpa));
+                        updateStmt.setInt(2, gradeId);
+                        updateStmt.executeUpdate();
+                    }
+                    // Update enrollment to link to grade
+                    updateEnrollmentGrade(enrollmentId, gradeId);
+                    return gradeId;
+                } else {
+                    // Create new grade
+                    String insertSql = "INSERT INTO grades (enroll_id, grade) VALUES (?, ?)";
+                    try (PreparedStatement insertStmt = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
+                        insertStmt.setInt(1, enrollmentId);
+                        insertStmt.setString(2, String.valueOf(sgpa));
+                        insertStmt.executeUpdate();
+                        try (ResultSet generatedKeys = insertStmt.getGeneratedKeys()) {
+                            if (generatedKeys.next()) {
+                                int gradeId = generatedKeys.getInt(1);
+                                // Update enrollment to link to grade
+                                updateEnrollmentGrade(enrollmentId, gradeId);
+                                return gradeId;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+    // Get average SGPA for a student
+    public Float getAverageSGPAForStudent(int studentId) {
+        String sql = """
+                SELECT AVG(CAST(g.grade AS REAL)) as avg_sgpa
+                FROM enrollments e
+                INNER JOIN grades g ON e.grade_id = g.grade_id
+                WHERE e.student_id = ? AND g.grade IS NOT NULL AND g.grade != ''
+                """;
+        try (Connection conn = connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, studentId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    double avg = rs.getDouble("avg_sgpa");
+                    if (!rs.wasNull()) {
+                        return (float) avg;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }
